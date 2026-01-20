@@ -17,6 +17,8 @@ const INITIAL_TRANSACTIONS: Transaction[] = [
   { id: '5', timestamp: '2024-05-19T16:00:00', type: TransactionType.ID, amount: 75, status: 'Success' },
 ];
 
+const INITIAL_OFFICERS = ['Officer Rahim', 'Officer Karim', 'Officer Shila'];
+
 export type View = 'dashboard' | 'transactions' | 'disbursements' | 'settings';
 
 const App: React.FC = () => {
@@ -42,6 +44,10 @@ const App: React.FC = () => {
   const [disbursements, setDisbursements] = useState<Disbursement[]>(() => 
     getStoredValue('nexus_disbursements', [])
   );
+
+  const [loanOfficers, setLoanOfficers] = useState<string[]>(() => 
+    getStoredValue('nexus_loanOfficers', INITIAL_OFFICERS)
+  );
   
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   
@@ -60,6 +66,10 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('nexus_disbursements', JSON.stringify(disbursements));
   }, [disbursements]);
+
+  useEffect(() => {
+    localStorage.setItem('nexus_loanOfficers', JSON.stringify(loanOfficers));
+  }, [loanOfficers]);
 
   useEffect(() => {
     localStorage.setItem('nexus_lastView', JSON.stringify(currentView));
@@ -147,6 +157,7 @@ const App: React.FC = () => {
         return (
           <DisbursementView 
             disbursements={disbursements}
+            loanOfficers={loanOfficers}
             onAddDisbursement={addDisbursement}
             onDeleteDisbursement={deleteDisbursement}
             language={language}
@@ -163,6 +174,8 @@ const App: React.FC = () => {
             setUserName={setUserName}
             userAvatar={userAvatar}
             setUserAvatar={setUserAvatar}
+            loanOfficers={loanOfficers}
+            setLoanOfficers={setLoanOfficers}
             language={language}
             setLanguage={setLanguage}
           />

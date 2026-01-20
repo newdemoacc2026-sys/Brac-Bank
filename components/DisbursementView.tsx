@@ -2,13 +2,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Plus, User, Phone, Hash, Briefcase, Calendar, Trash2, X, 
-  AlertCircle, ChevronLeft, ChevronRight, Check 
+  AlertCircle, ChevronLeft, ChevronRight, Check, ChevronDown 
 } from 'lucide-react';
 import { Disbursement } from '../types';
 import { formatCurrency } from '../utils/finance';
 
 interface DisbursementViewProps {
   disbursements: Disbursement[];
+  loanOfficers: string[];
   onAddDisbursement: (dis: Omit<Disbursement, 'id'>) => void;
   onDeleteDisbursement: (id: string) => void;
   language: 'en' | 'bn';
@@ -16,13 +17,17 @@ interface DisbursementViewProps {
 
 export const DisbursementView: React.FC<DisbursementViewProps> = ({ 
   disbursements, 
+  loanOfficers,
   onAddDisbursement, 
   onDeleteDisbursement,
   language 
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [isOfficerOpen, setIsOfficerOpen] = useState(false);
+  
   const datePickerRef = useRef<HTMLDivElement>(null);
+  const officerRef = useRef<HTMLDivElement>(null);
   
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState<Omit<Disbursement, 'id'>>({
@@ -63,6 +68,7 @@ export const DisbursementView: React.FC<DisbursementViewProps> = ({
     errWordsOnly: language === 'en' ? 'Only words are allowed' : 'শুধুমাত্র অক্ষর ব্যবহার করুন',
     errNumbersOnly: language === 'en' ? 'Only numbers are allowed' : 'শুধুমাত্র সংখ্যা ব্যবহার করুন',
     selectToday: language === 'en' ? 'Today' : 'আজ',
+    selectOfficer: language === 'en' ? 'Select Officer' : 'অফিসার নির্বাচন করুন',
   };
 
   useEffect(() => {
@@ -70,10 +76,20 @@ export const DisbursementView: React.FC<DisbursementViewProps> = ({
       if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
         setIsDatePickerOpen(false);
       }
+      if (officerRef.current && !officerRef.current.contains(event.target as Node)) {
+        setIsOfficerOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Update default officer when list changes if currently empty
+  useEffect(() => {
+    if (!formData.loanOfficer && loanOfficers.length > 0) {
+      setFormData(prev => ({ ...prev, loanOfficer: loanOfficers[0] }));
+    }
+  }, [loanOfficers]);
 
   const handleInputChange = (name: string, value: any) => {
     if (name === 'accountTitle') {
@@ -112,7 +128,7 @@ export const DisbursementView: React.FC<DisbursementViewProps> = ({
         mobileNumber: '',
         loanAmount: 0,
         disbursementAmount: 0,
-        loanOfficer: '',
+        loanOfficer: loanOfficers[0] || '',
         date: new Date().toISOString().split('T')[0]
       });
       setErrors({});
@@ -176,7 +192,12 @@ export const DisbursementView: React.FC<DisbursementViewProps> = ({
           </p>
         </div>
         <button 
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => {
+            setIsModalOpen(true);
+            if (loanOfficers.length > 0 && !formData.loanOfficer) {
+              setFormData(prev => ({ ...prev, loanOfficer: loanOfficers[0] }));
+            }
+          }}
           className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-black px-6 py-3 rounded-2xl shadow-xl shadow-blue-500/30 transition-all active:scale-95"
         >
           <Plus size={20} strokeWidth={3} />
@@ -370,22 +391,55 @@ export const DisbursementView: React.FC<DisbursementViewProps> = ({
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  {/* Loan Officer */}
-                  <div className="space-y-1.5">
+                  {/* Loan Officer - CUSTOM BEAUTIFUL DROPDOWN (OPENS UPWARDS) */}
+                  <div className="space-y-1.5 relative" ref={officerRef}>
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 flex items-center gap-1.5">
                       <Briefcase size={12} /> {t.officer}
                     </label>
-                    <input 
-                      required
-                      type="text" 
-                      value={formData.loanOfficer}
-                      onChange={e => setFormData({...formData, loanOfficer: e.target.value})}
-                      placeholder="Name"
-                      className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-5 py-3.5 text-sm font-semibold focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none dark:text-white"
-                    />
+                    <button 
+                      type="button"
+                      onClick={() => setIsOfficerOpen(!isOfficerOpen)}
+                      className={`w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-5 py-3.5 text-sm font-semibold text-left transition-all outline-none flex items-center justify-between ${
+                        isOfficerOpen ? 'ring-4 ring-blue-500/10 border-blue-500' : ''
+                      }`}
+                    >
+                      <span className={formData.loanOfficer ? 'dark:text-white' : 'text-slate-400'}>
+                        {formData.loanOfficer || t.selectOfficer}
+                      </span>
+                      <ChevronDown size={16} className={`text-slate-400 transition-transform duration-200 ${isOfficerOpen ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {isOfficerOpen && (
+                      <div className="absolute bottom-full left-0 right-0 mb-4 bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-slate-800 rounded-[1.5rem] shadow-2xl py-2 z-[110] animate-in fade-in zoom-in-95 duration-150 max-h-48 overflow-y-auto custom-scrollbar">
+                        {loanOfficers.length > 0 ? (
+                          loanOfficers.map((officer, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => {
+                                handleInputChange('loanOfficer', officer);
+                                setIsOfficerOpen(false);
+                              }}
+                              className={`w-full flex items-center justify-between px-5 py-3 text-sm font-semibold transition-colors ${
+                                formData.loanOfficer === officer 
+                                  ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' 
+                                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                              }`}
+                            >
+                              {officer}
+                              {formData.loanOfficer === officer && <Check size={14} />}
+                            </button>
+                          ))
+                        ) : (
+                          <div className="px-5 py-3 text-xs text-slate-400 italic">
+                            No officers found
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
-                  {/* Date Custom Picker */}
+                  {/* Date Custom Picker - Set to open upwards */}
                   <div className="space-y-1.5 relative" ref={datePickerRef}>
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 flex items-center gap-1.5">
                       <Calendar size={12} /> {t.date}
@@ -407,7 +461,7 @@ export const DisbursementView: React.FC<DisbursementViewProps> = ({
                     </button>
 
                     {isDatePickerOpen && (
-                      <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-slate-800 rounded-[1.5rem] shadow-2xl p-4 z-[110] animate-in fade-in zoom-in-95 duration-150">
+                      <div className="absolute bottom-full left-0 right-0 mb-4 bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-slate-800 rounded-[1.5rem] shadow-2xl p-4 z-[110] animate-in fade-in zoom-in-95 duration-150">
                         <div className="flex items-center justify-between mb-4 px-1">
                           <span className="text-sm font-black text-slate-900 dark:text-white">
                             {months[viewDate.getMonth()]} {viewDate.getFullYear()}

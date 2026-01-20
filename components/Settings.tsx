@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { Building2, UserCircle, Languages, Check, Pencil, Save, X, Upload, Camera, Globe } from 'lucide-react';
+import { Building2, UserCircle, Languages, Check, Pencil, Save, X, Upload, Camera, Globe, Briefcase, Plus, Trash2 } from 'lucide-react';
 
 interface SettingsProps {
   bankName: string;
@@ -11,6 +11,8 @@ interface SettingsProps {
   setUserName: (name: string) => void;
   userAvatar: string | null;
   setUserAvatar: (avatar: string | null) => void;
+  loanOfficers: string[];
+  setLoanOfficers: (officers: string[]) => void;
   language: 'en' | 'bn';
   setLanguage: (lang: 'en' | 'bn') => void;
 }
@@ -24,6 +26,8 @@ export const Settings: React.FC<SettingsProps> = ({
   setUserName,
   userAvatar,
   setUserAvatar,
+  loanOfficers,
+  setLoanOfficers,
   language,
   setLanguage
 }) => {
@@ -33,6 +37,8 @@ export const Settings: React.FC<SettingsProps> = ({
 
   const [isEditingUser, setIsEditingUser] = useState(false);
   const [tempUserName, setTempUserName] = useState(userName);
+
+  const [newOfficerName, setNewOfficerName] = useState('');
 
   const bankLogoInputRef = useRef<HTMLInputElement>(null);
   const userAvatarInputRef = useRef<HTMLInputElement>(null);
@@ -45,6 +51,17 @@ export const Settings: React.FC<SettingsProps> = ({
   const handleUserSave = () => {
     setUserName(tempUserName);
     setIsEditingUser(false);
+  };
+
+  const handleAddOfficer = () => {
+    if (newOfficerName.trim()) {
+      setLoanOfficers([...loanOfficers, newOfficerName.trim()]);
+      setNewOfficerName('');
+    }
+  };
+
+  const handleRemoveOfficer = (index: number) => {
+    setLoanOfficers(loanOfficers.filter((_, i) => i !== index));
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, setter: (val: string | null) => void) => {
@@ -78,6 +95,10 @@ export const Settings: React.FC<SettingsProps> = ({
     edit: language === 'en' ? 'Edit' : 'সম্পাদনা',
     placeholderBank: language === 'en' ? "Enter Bank Name" : "ব্যাংকের নাম লিখুন",
     placeholderUser: language === 'en' ? "Enter Your Name" : "আপনার নাম লিখুন",
+    officers: language === 'en' ? 'Manage Loan Officers' : 'লোন অফিসার ম্যানেজমেন্ট',
+    officersDesc: language === 'en' ? 'The names below will appear in the disbursement dropdown.' : 'নিচের নামগুলো ডিসবার্সমেন্ট ড্রপডাউন-এ দেখা যাবে।',
+    addOfficer: language === 'en' ? 'Add Officer' : 'অফিসার যোগ করুন',
+    noOfficers: language === 'en' ? 'No officers added yet.' : 'এখনও কোনো অফিসার যোগ করা হয়নি।',
   };
 
   return (
@@ -218,6 +239,62 @@ export const Settings: React.FC<SettingsProps> = ({
                 </button>
               )}
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Loan Officers Management Section */}
+      <section className="bg-white dark:bg-[#1E293B] rounded-3xl p-8 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl">
+            <Briefcase size={24} />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+              {t.officers}
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{t.officersDesc}</p>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newOfficerName}
+              onChange={(e) => setNewOfficerName(e.target.value)}
+              placeholder={language === 'en' ? "Officer Name" : "অফিসারের নাম"}
+              className="flex-1 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-5 py-3 text-sm font-semibold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 dark:text-white"
+            />
+            <button
+              onClick={handleAddOfficer}
+              className="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl transition-all active:scale-95 flex items-center gap-2"
+            >
+              <Plus size={18} />
+              <span className="hidden sm:inline">{t.addOfficer}</span>
+            </button>
+          </div>
+
+          <div className="flex flex-wrap gap-2 pt-2">
+            {loanOfficers.length > 0 ? (
+              loanOfficers.map((officer, index) => (
+                <div 
+                  key={index} 
+                  className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800/80 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 group transition-all hover:border-emerald-500/50"
+                >
+                  <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{officer}</span>
+                  <button 
+                    onClick={() => handleRemoveOfficer(index)}
+                    className="p-1 text-slate-400 hover:text-rose-500 transition-colors"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))
+            ) : (
+              /* Fix: Use 't.noOfficers' instead of 't.noData' which was not defined in the translation object */
+              <p className="text-sm text-slate-400 italic py-2">{t.noOfficers}</p>
+            )}
           </div>
         </div>
       </section>
