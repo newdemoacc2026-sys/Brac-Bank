@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Sun, Moon, LayoutDashboard, History, Settings as SettingsIcon, Bell, Search, User, Plus } from 'lucide-react';
+import { Sun, Moon, LayoutDashboard, History, Settings as SettingsIcon, Bell, Search, User, Plus, HandCoins } from 'lucide-react';
 import { View } from '../App';
 
 interface LayoutProps {
@@ -33,6 +33,7 @@ export const Layout: React.FC<LayoutProps> = ({
   const t = {
     dashboard: language === 'en' ? 'Dashboard' : 'ড্যাশবোর্ড',
     transactions: language === 'en' ? 'Transactions' : 'লেনদেন',
+    disbursements: language === 'en' ? 'Disbursement' : 'ডিসবার্সমেন্ট',
     alerts: language === 'en' ? 'Alerts' : 'সতর্কতা',
     settings: language === 'en' ? 'Settings' : 'সেটিংস',
     search: language === 'en' ? 'Search transactions...' : 'লেনদেন খুঁজুন...',
@@ -59,6 +60,12 @@ export const Layout: React.FC<LayoutProps> = ({
             label={t.dashboard} 
             active={currentView === 'dashboard'} 
             onClick={() => onViewChange('dashboard')}
+          />
+          <NavItem 
+            icon={<HandCoins size={20} />} 
+            label={t.disbursements} 
+            active={currentView === 'disbursements'} 
+            onClick={() => onViewChange('disbursements')}
           />
           <NavItem 
             icon={<History size={20} />} 

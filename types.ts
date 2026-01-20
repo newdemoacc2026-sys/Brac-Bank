@@ -18,6 +18,17 @@ export interface Transaction {
   status: TransactionStatus;
 }
 
+export interface Disbursement {
+  id: string;
+  accountTitle: string;
+  accountNumber: string;
+  mobileNumber: string;
+  loanAmount: number;
+  disbursementAmount: number;
+  loanOfficer: string;
+  date: string;
+}
+
 export interface DailySummary {
   totalCashIn: number;
   totalCashOut: number;

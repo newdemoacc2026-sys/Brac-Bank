@@ -6,7 +6,8 @@ import { TransactionForm } from './components/TransactionForm';
 import { TransactionTable } from './components/TransactionTable';
 import { AdvancedDatePicker } from './components/AdvancedDatePicker';
 import { Settings } from './components/Settings';
-import { Transaction, TransactionType } from './types';
+import { DisbursementView } from './components/DisbursementView';
+import { Transaction, TransactionType, Disbursement } from './types';
 
 const INITIAL_TRANSACTIONS: Transaction[] = [
   { id: '1', timestamp: '2024-05-20T10:30:00', type: TransactionType.CD, amount: 5000, status: 'Success' },
@@ -16,21 +17,62 @@ const INITIAL_TRANSACTIONS: Transaction[] = [
   { id: '5', timestamp: '2024-05-19T16:00:00', type: TransactionType.ID, amount: 75, status: 'Success' },
 ];
 
-export type View = 'dashboard' | 'transactions' | 'settings';
+export type View = 'dashboard' | 'transactions' | 'disbursements' | 'settings';
 
 const App: React.FC = () => {
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  // Persistence Helper
+  const getStoredValue = <T,>(key: string, defaultValue: T): T => {
+    const stored = localStorage.getItem(key);
+    if (!stored) return defaultValue;
+    try {
+      return JSON.parse(stored) as T;
+    } catch {
+      return defaultValue;
+    }
+  };
+
+  const [isDarkMode, setIsDarkMode] = useState(() => getStoredValue('nexus_darkMode', false));
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<View>('dashboard');
-  const [transactions, setTransactions] = useState<Transaction[]>(INITIAL_TRANSACTIONS);
+  const [currentView, setCurrentView] = useState<View>(() => getStoredValue('nexus_lastView', 'dashboard'));
+  
+  const [transactions, setTransactions] = useState<Transaction[]>(() => 
+    getStoredValue('nexus_transactions', INITIAL_TRANSACTIONS)
+  );
+
+  const [disbursements, setDisbursements] = useState<Disbursement[]>(() => 
+    getStoredValue('nexus_disbursements', [])
+  );
+  
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   
   // Settings State
-  const [bankName, setBankName] = useState('Nexus Bank');
-  const [bankLogo, setBankLogo] = useState<string | null>(null);
-  const [language, setLanguage] = useState<'en' | 'bn'>('en');
-  const [userName, setUserName] = useState('Admin Panel');
-  const [userAvatar, setUserAvatar] = useState<string | null>(null);
+  const [bankName, setBankName] = useState(() => getStoredValue('nexus_bankName', 'Nexus Bank'));
+  const [bankLogo, setBankLogo] = useState<string | null>(() => getStoredValue('nexus_bankLogo', null));
+  const [language, setLanguage] = useState<'en' | 'bn'>(() => getStoredValue('nexus_language', 'en'));
+  const [userName, setUserName] = useState(() => getStoredValue('nexus_userName', 'Admin Panel'));
+  const [userAvatar, setUserAvatar] = useState<string | null>(() => getStoredValue('nexus_userAvatar', null));
+
+  // Sync to LocalStorage
+  useEffect(() => {
+    localStorage.setItem('nexus_transactions', JSON.stringify(transactions));
+  }, [transactions]);
+
+  useEffect(() => {
+    localStorage.setItem('nexus_disbursements', JSON.stringify(disbursements));
+  }, [disbursements]);
+
+  useEffect(() => {
+    localStorage.setItem('nexus_lastView', JSON.stringify(currentView));
+  }, [currentView]);
+
+  useEffect(() => {
+    localStorage.setItem('nexus_bankName', JSON.stringify(bankName));
+    localStorage.setItem('nexus_bankLogo', JSON.stringify(bankLogo));
+    localStorage.setItem('nexus_language', JSON.stringify(language));
+    localStorage.setItem('nexus_userName', JSON.stringify(userName));
+    localStorage.setItem('nexus_userAvatar', JSON.stringify(userAvatar));
+    localStorage.setItem('nexus_darkMode', JSON.stringify(isDarkMode));
+  }, [bankName, bankLogo, language, userName, userAvatar, isDarkMode]);
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -51,11 +93,23 @@ const App: React.FC = () => {
     const tx: Transaction = {
       ...newTx,
       id: Math.random().toString(36).substr(2, 9),
-      timestamp: new Date().toISOString().split('T')[0] + 'T' + new Date().toTimeString().split(' ')[0],
+      timestamp: new Date().toISOString(),
       status: 'Success'
     };
     setTransactions(prev => [tx, ...prev]);
     setIsFormOpen(false);
+  };
+
+  const addDisbursement = (newDis: Omit<Disbursement, 'id'>) => {
+    const dis: Disbursement = {
+      ...newDis,
+      id: Math.random().toString(36).substr(2, 9)
+    };
+    setDisbursements(prev => [dis, ...prev]);
+  };
+
+  const deleteDisbursement = (id: string) => {
+    setDisbursements(prev => prev.filter(d => d.id !== id));
   };
 
   const renderView = () => {
@@ -88,6 +142,15 @@ const App: React.FC = () => {
               language={language}
             />
           </div>
+        );
+      case 'disbursements':
+        return (
+          <DisbursementView 
+            disbursements={disbursements}
+            onAddDisbursement={addDisbursement}
+            onDeleteDisbursement={deleteDisbursement}
+            language={language}
+          />
         );
       case 'settings':
         return (
@@ -125,8 +188,8 @@ const App: React.FC = () => {
       >
         <div className="max-w-7xl mx-auto px-4 py-8 space-y-8 animate-in fade-in duration-500">
           
-          {/* Global Header with Date Selector (Hidden on Settings) */}
-          {currentView !== 'settings' && (
+          {/* Global Header with Date Selector (Hidden on Settings/Disbursements) */}
+          {(currentView !== 'settings' && currentView !== 'disbursements') && (
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-slate-200 dark:border-slate-800 pb-8">
               <div>
                 <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter">

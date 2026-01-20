@@ -7,7 +7,6 @@ import {
   ChevronDown, 
   FileSpreadsheet, 
   FileJson, 
-  Printer, 
   FileText,
   Download
 } from 'lucide-react';
@@ -83,7 +82,6 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ transactions
     excel: language === 'en' ? 'Microsoft Excel' : 'মাইক্রোসফট এক্সেল',
     word: language === 'en' ? 'Microsoft Word' : 'মাইক্রোসফট ওয়ার্ড',
     json: language === 'en' ? 'JSON Data' : 'জেসন (JSON)',
-    pdf: language === 'en' ? 'Print / PDF' : 'প্রিন্ট / PDF',
     selectFormat: language === 'en' ? 'Select Format' : 'ফরম্যাট নির্বাচন করুন',
   };
 
@@ -153,19 +151,6 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ transactions
     link.setAttribute("download", `NexusBank_Data_${new Date().toISOString().split('T')[0]}.json`);
     link.click();
     setIsExportMenuOpen(false);
-  };
-
-  const handlePrint = () => {
-    // Close the menu first to ensure it's not visible in the print output
-    setIsExportMenuOpen(false);
-    
-    // Use requestAnimationFrame to wait for the UI update to finish before triggering print
-    requestAnimationFrame(() => {
-        // Double requestAnimationFrame to ensure the next frame (where menu is hidden) is rendered
-        requestAnimationFrame(() => {
-            window.print();
-        });
-    });
   };
 
   return (
@@ -239,18 +224,6 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ transactions
                   <FileJson size={16} />
                 </div>
                 {t.json}
-              </button>
-
-              <div className="h-[1px] bg-slate-100 dark:bg-slate-800 my-1 mx-2" />
-
-              <button 
-                onClick={handlePrint}
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
-              >
-                <div className="p-1.5 bg-rose-100 dark:bg-rose-900/30 rounded-lg text-rose-600 dark:text-rose-400">
-                  <Printer size={16} />
-                </div>
-                {t.pdf}
               </button>
             </div>
           )}
