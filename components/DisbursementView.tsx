@@ -1,16 +1,19 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   Plus, User, Phone, Hash, Briefcase, Calendar, Trash2, X, 
-  AlertCircle, ChevronLeft, ChevronRight, Check, ChevronDown 
+  AlertCircle, ChevronLeft, ChevronRight, Check, ChevronDown,
+  Filter, CalendarDays, Pencil
 } from 'lucide-react';
 import { Disbursement } from '../types';
 import { formatCurrency } from '../utils/finance';
+import { AdvancedDatePicker } from './AdvancedDatePicker';
 
 interface DisbursementViewProps {
   disbursements: Disbursement[];
   loanOfficers: string[];
   onAddDisbursement: (dis: Omit<Disbursement, 'id'>) => void;
+  onUpdateDisbursement: (id: string, dis: Omit<Disbursement, 'id'>) => void;
   onDeleteDisbursement: (id: string) => void;
   language: 'en' | 'bn';
 }
@@ -19,12 +22,17 @@ export const DisbursementView: React.FC<DisbursementViewProps> = ({
   disbursements, 
   loanOfficers,
   onAddDisbursement, 
+  onUpdateDisbursement,
   onDeleteDisbursement,
   language 
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [isOfficerOpen, setIsOfficerOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  
+  // Date filter state
+  const [filterDate, setFilterDate] = useState<string>(new Date().toISOString().split('T')[0]);
   
   const datePickerRef = useRef<HTMLDivElement>(null);
   const officerRef = useRef<HTMLDivElement>(null);
@@ -40,7 +48,7 @@ export const DisbursementView: React.FC<DisbursementViewProps> = ({
     date: new Date().toISOString().split('T')[0]
   });
 
-  // Calendar logic helpers
+  // Calendar logic helpers for the modal picker
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
@@ -53,6 +61,7 @@ export const DisbursementView: React.FC<DisbursementViewProps> = ({
     title: language === 'en' ? 'Disbursement Management' : 'ডিসবার্সমেন্ট ম্যানেজমেন্ট',
     subtitle: language === 'en' ? 'Manage and track all loan disbursements' : 'সমস্ত লোন ডিসবার্সমেন্ট ম্যানেজ এবং ট্র্যাক করুন',
     addBtn: language === 'en' ? 'New Disbursement' : 'নতুন ডিসবার্সমেন্ট',
+    editBtn: language === 'en' ? 'Edit Disbursement' : 'ডিসবার্সমেন্ট সংশোধন',
     accTitle: language === 'en' ? 'Account Title' : 'অ্যাকাউন্টের নাম',
     accNo: language === 'en' ? 'Account Number' : 'অ্যাকাউন্ট নম্বর',
     mobile: language === 'en' ? 'Mobile Number' : 'মোবাইল নম্বর',
@@ -61,15 +70,23 @@ export const DisbursementView: React.FC<DisbursementViewProps> = ({
     officer: language === 'en' ? 'Loan Officer' : 'লোন অফিসার',
     date: language === 'en' ? 'Disbursement Date' : 'ডিসবার্সমেন্টের তারিখ',
     actions: language === 'en' ? 'Actions' : 'অ্যাকশন',
-    noData: language === 'en' ? 'No disbursements recorded yet' : 'এখনও কোন ডিসবার্সমেন্ট রেকর্ড করা হয়নি',
+    noData: language === 'en' ? 'No disbursements recorded for this date' : 'এই তারিখের জন্য কোন ডিসবার্সমেন্ট রেকর্ড করা হয়নি',
     save: language === 'en' ? 'Save Record' : 'রেকর্ড সংরক্ষণ',
+    update: language === 'en' ? 'Update Record' : 'আপডেট করুন',
     cancel: language === 'en' ? 'Cancel' : 'বাতিল',
     confirmDelete: language === 'en' ? 'Delete this record?' : 'এই রেকর্ডটি মুছবেন?',
     errWordsOnly: language === 'en' ? 'Only words are allowed' : 'শুধুমাত্র অক্ষর ব্যবহার করুন',
     errNumbersOnly: language === 'en' ? 'Only numbers are allowed' : 'শুধুমাত্র সংখ্যা ব্যবহার করুন',
     selectToday: language === 'en' ? 'Today' : 'আজ',
     selectOfficer: language === 'en' ? 'Select Officer' : 'অফিসার নির্বাচন করুন',
+    filterBy: language === 'en' ? 'Filter by Date' : 'তারিখ অনুযায়ী ফিল্টার',
+    totalEntries: language === 'en' ? 'Total Entries' : 'মোট এন্ট্রি',
   };
+
+  // Filter disbursements based on the selected date
+  const filteredDisbursements = useMemo(() => {
+    return disbursements.filter(d => d.date === filterDate);
+  }, [disbursements, filterDate]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -84,12 +101,11 @@ export const DisbursementView: React.FC<DisbursementViewProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Update default officer when list changes if currently empty
   useEffect(() => {
-    if (!formData.loanOfficer && loanOfficers.length > 0) {
+    if (!formData.loanOfficer && loanOfficers.length > 0 && !editingId) {
       setFormData(prev => ({ ...prev, loanOfficer: loanOfficers[0] }));
     }
-  }, [loanOfficers]);
+  }, [loanOfficers, editingId]);
 
   const handleInputChange = (name: string, value: any) => {
     if (name === 'accountTitle') {
@@ -113,6 +129,20 @@ export const DisbursementView: React.FC<DisbursementViewProps> = ({
     }
   };
 
+  const handleEdit = (dis: Disbursement) => {
+    setEditingId(dis.id);
+    setFormData({
+      accountTitle: dis.accountTitle,
+      accountNumber: dis.accountNumber,
+      mobileNumber: dis.mobileNumber,
+      loanAmount: dis.loanAmount,
+      disbursementAmount: dis.disbursementAmount,
+      loanOfficer: dis.loanOfficer,
+      date: dis.date
+    });
+    setIsModalOpen(true);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const isTitleValid = !/[0-9]/.test(formData.accountTitle);
@@ -120,34 +150,39 @@ export const DisbursementView: React.FC<DisbursementViewProps> = ({
     const isMobValid = !/[^0-9]/.test(formData.mobileNumber);
 
     if (isTitleValid && isAccValid && isMobValid) {
-      onAddDisbursement(formData);
-      setIsModalOpen(false);
-      setFormData({
-        accountTitle: '',
-        accountNumber: '',
-        mobileNumber: '',
-        loanAmount: 0,
-        disbursementAmount: 0,
-        loanOfficer: loanOfficers[0] || '',
-        date: new Date().toISOString().split('T')[0]
-      });
-      setErrors({});
+      if (editingId) {
+        onUpdateDisbursement(editingId, formData);
+      } else {
+        onAddDisbursement(formData);
+      }
+      handleCloseModal();
     }
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingId(null);
+    setFormData({
+      accountTitle: '',
+      accountNumber: '',
+      mobileNumber: '',
+      loanAmount: 0,
+      disbursementAmount: 0,
+      loanOfficer: loanOfficers[0] || '',
+      date: new Date().toISOString().split('T')[0]
+    });
+    setErrors({});
   };
 
   const TakaIcon = () => (
     <span className="font-bold text-[14px] leading-none">৳</span>
   );
 
-  // Calendar render functions
-  const daysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
-  const firstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
-
   const renderCalendar = () => {
     const year = viewDate.getFullYear();
     const month = viewDate.getMonth();
-    const totalDays = daysInMonth(year, month);
-    const startOffset = firstDayOfMonth(year, month);
+    const totalDays = new Date(year, month + 1, 0).getDate();
+    const startOffset = new Date(year, month, 1).getDay();
     const calendarDays = [];
 
     for (let i = 0; i < startOffset; i++) calendarDays.push(null);
@@ -182,7 +217,7 @@ export const DisbursementView: React.FC<DisbursementViewProps> = ({
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-20">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-200 dark:border-slate-800 pb-8">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-slate-200 dark:border-slate-800 pb-8">
         <div>
           <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter">
             {t.title}
@@ -191,18 +226,43 @@ export const DisbursementView: React.FC<DisbursementViewProps> = ({
             {t.subtitle}
           </p>
         </div>
-        <button 
-          onClick={() => {
-            setIsModalOpen(true);
-            if (loanOfficers.length > 0 && !formData.loanOfficer) {
-              setFormData(prev => ({ ...prev, loanOfficer: loanOfficers[0] }));
-            }
-          }}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-black px-6 py-3 rounded-2xl shadow-xl shadow-blue-500/30 transition-all active:scale-95"
-        >
-          <Plus size={20} strokeWidth={3} />
-          {t.addBtn}
-        </button>
+        
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">
+              {t.filterBy}
+            </label>
+            <div className="scale-90 origin-bottom-right md:scale-100">
+              <AdvancedDatePicker selectedDate={filterDate} onDateChange={setFilterDate} />
+            </div>
+          </div>
+          
+          <button 
+            onClick={() => {
+              setEditingId(null);
+              setIsModalOpen(true);
+              if (loanOfficers.length > 0 && !formData.loanOfficer) {
+                setFormData(prev => ({ ...prev, loanOfficer: loanOfficers[0] }));
+              }
+            }}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-black px-6 py-3 rounded-2xl shadow-xl shadow-blue-500/30 transition-all active:scale-95 h-[48px] self-end"
+          >
+            <Plus size={20} strokeWidth={3} />
+            <span className="hidden sm:inline">{t.addBtn}</span>
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white dark:bg-[#1E293B] p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
+           <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center text-blue-600 dark:text-blue-400">
+             <CalendarDays size={24} />
+           </div>
+           <div>
+             <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t.totalEntries} ({filterDate})</p>
+             <h4 className="text-2xl font-black text-slate-900 dark:text-white">{filteredDisbursements.length}</h4>
+           </div>
+        </div>
       </div>
 
       <div className="bg-white dark:bg-[#1E293B] rounded-3xl border border-slate-200 dark:border-slate-800 shadow-md overflow-hidden transition-theme">
@@ -219,8 +279,8 @@ export const DisbursementView: React.FC<DisbursementViewProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {disbursements.length > 0 ? (
-                disbursements.map((dis) => (
+              {filteredDisbursements.length > 0 ? (
+                filteredDisbursements.map((dis) => (
                   <tr key={dis.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors group">
                     <td className="px-6 py-5">
                       <div className="flex flex-col">
@@ -250,12 +310,22 @@ export const DisbursementView: React.FC<DisbursementViewProps> = ({
                       </div>
                     </td>
                     <td className="px-6 py-5 text-right">
-                      <button 
-                        onClick={() => onDeleteDisbursement(dis.id)}
-                        className="p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-colors"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button 
+                          onClick={() => handleEdit(dis)}
+                          className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-colors"
+                          title={language === 'en' ? 'Edit' : 'সম্পাদনা'}
+                        >
+                          <Pencil size={16} />
+                        </button>
+                        <button 
+                          onClick={() => onDeleteDisbursement(dis.id)}
+                          className="p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-colors"
+                          title={language === 'en' ? 'Delete' : 'মুছে ফেলুন'}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -271,24 +341,23 @@ export const DisbursementView: React.FC<DisbursementViewProps> = ({
         </div>
       </div>
 
-      {/* Entry Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="w-full max-w-lg bg-white dark:bg-[#1E293B] rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="px-8 pt-8 pb-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
               <div>
-                <h3 className="text-xl font-black text-slate-900 dark:text-white">{t.addBtn}</h3>
+                <h3 className="text-xl font-black text-slate-900 dark:text-white">
+                  {editingId ? t.editBtn : t.addBtn}
+                </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">{language === 'en' ? 'Quick Entry' : 'দ্রুত এন্ট্রি'}</p>
               </div>
-              <button onClick={() => setIsModalOpen(false)} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500 hover:text-slate-900 dark:hover:text-white">
+              <button onClick={handleCloseModal} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500 hover:text-slate-900 dark:hover:text-white">
                 <X size={18} />
               </button>
             </div>
 
             <form onSubmit={handleSubmit} className="p-8 space-y-4 max-h-[75vh] overflow-y-auto custom-scrollbar">
               <div className="grid grid-cols-1 gap-4">
-                
-                {/* Account Title */}
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 flex items-center gap-1.5">
                     <User size={12} /> {t.accTitle}
@@ -311,7 +380,6 @@ export const DisbursementView: React.FC<DisbursementViewProps> = ({
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  {/* Account Number */}
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 flex items-center gap-1.5">
                       <Hash size={12} /> {t.accNo}
@@ -334,7 +402,6 @@ export const DisbursementView: React.FC<DisbursementViewProps> = ({
                     )}
                   </div>
 
-                  {/* Mobile Number */}
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 flex items-center gap-1.5">
                       <Phone size={12} /> {t.mobile}
@@ -359,7 +426,6 @@ export const DisbursementView: React.FC<DisbursementViewProps> = ({
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  {/* Loan Amount */}
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 flex items-center gap-1.5">
                       <TakaIcon /> {t.loanAmt}
@@ -374,7 +440,6 @@ export const DisbursementView: React.FC<DisbursementViewProps> = ({
                     />
                   </div>
 
-                  {/* Disbursement Amount */}
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 flex items-center gap-1.5">
                       <TakaIcon /> {t.disAmt}
@@ -391,7 +456,6 @@ export const DisbursementView: React.FC<DisbursementViewProps> = ({
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  {/* Loan Officer - CUSTOM BEAUTIFUL DROPDOWN (OPENS UPWARDS) */}
                   <div className="space-y-1.5 relative" ref={officerRef}>
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 flex items-center gap-1.5">
                       <Briefcase size={12} /> {t.officer}
@@ -439,7 +503,6 @@ export const DisbursementView: React.FC<DisbursementViewProps> = ({
                     )}
                   </div>
 
-                  {/* Date Custom Picker - Set to open upwards */}
                   <div className="space-y-1.5 relative" ref={datePickerRef}>
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 flex items-center gap-1.5">
                       <Calendar size={12} /> {t.date}
@@ -514,7 +577,7 @@ export const DisbursementView: React.FC<DisbursementViewProps> = ({
               <div className="flex gap-3 pt-4">
                 <button 
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={handleCloseModal}
                   className="flex-1 py-3.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-2xl transition-colors text-sm"
                 >
                   {t.cancel}
@@ -523,7 +586,7 @@ export const DisbursementView: React.FC<DisbursementViewProps> = ({
                   type="submit"
                   className="flex-[1.5] py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl shadow-xl shadow-blue-500/30 transition-all active:scale-95 text-sm"
                 >
-                  {t.save}
+                  {editingId ? t.update : t.save}
                 </button>
               </div>
             </form>

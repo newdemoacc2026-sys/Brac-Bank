@@ -118,6 +118,10 @@ const App: React.FC = () => {
     setDisbursements(prev => [dis, ...prev]);
   };
 
+  const updateDisbursement = (id: string, updatedDis: Omit<Disbursement, 'id'>) => {
+    setDisbursements(prev => prev.map(d => d.id === id ? { ...updatedDis, id } : d));
+  };
+
   const deleteDisbursement = (id: string) => {
     setDisbursements(prev => prev.filter(d => d.id !== id));
   };
@@ -159,6 +163,7 @@ const App: React.FC = () => {
             disbursements={disbursements}
             loanOfficers={loanOfficers}
             onAddDisbursement={addDisbursement}
+            onUpdateDisbursement={updateDisbursement}
             onDeleteDisbursement={deleteDisbursement}
             language={language}
           />
