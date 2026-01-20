@@ -1,0 +1,171 @@
+
+import React, { useState, useEffect, useMemo } from 'react';
+import { Layout } from './components/Layout';
+import { Dashboard } from './components/Dashboard';
+import { TransactionForm } from './components/TransactionForm';
+import { TransactionTable } from './components/TransactionTable';
+import { AdvancedDatePicker } from './components/AdvancedDatePicker';
+import { Settings } from './components/Settings';
+import { Transaction, TransactionType } from './types';
+
+const INITIAL_TRANSACTIONS: Transaction[] = [
+  { id: '1', timestamp: '2024-05-20T10:30:00', type: TransactionType.CD, amount: 5000, status: 'Success' },
+  { id: '2', timestamp: '2024-05-20T11:45:00', type: TransactionType.LD, amount: 50000, status: 'Pending' },
+  { id: '3', timestamp: '2024-05-21T09:15:00', type: TransactionType.CW, amount: 1200, status: 'Success' },
+  { id: '4', timestamp: '2024-05-21T14:20:00', type: TransactionType.BC, amount: 450, status: 'Success' },
+  { id: '5', timestamp: '2024-05-19T16:00:00', type: TransactionType.ID, amount: 75, status: 'Success' },
+];
+
+export type View = 'dashboard' | 'transactions' | 'settings';
+
+const App: React.FC = () => {
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [currentView, setCurrentView] = useState<View>('dashboard');
+  const [transactions, setTransactions] = useState<Transaction[]>(INITIAL_TRANSACTIONS);
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  
+  // Settings State
+  const [bankName, setBankName] = useState('Nexus Bank');
+  const [bankLogo, setBankLogo] = useState<string | null>(null);
+  const [language, setLanguage] = useState<'en' | 'bn'>('en');
+  const [userName, setUserName] = useState('Admin Panel');
+  const [userAvatar, setUserAvatar] = useState<string | null>(null);
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (isDarkMode) {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+  }, [isDarkMode]);
+
+  const toggleTheme = () => setIsDarkMode(prev => !prev);
+
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter(tx => tx.timestamp.startsWith(selectedDate));
+  }, [transactions, selectedDate]);
+
+  const addTransaction = (newTx: Omit<Transaction, 'id' | 'timestamp' | 'status'>) => {
+    const tx: Transaction = {
+      ...newTx,
+      id: Math.random().toString(36).substr(2, 9),
+      timestamp: new Date().toISOString().split('T')[0] + 'T' + new Date().toTimeString().split(' ')[0],
+      status: 'Success'
+    };
+    setTransactions(prev => [tx, ...prev]);
+    setIsFormOpen(false);
+  };
+
+  const renderView = () => {
+    switch (currentView) {
+      case 'dashboard':
+        return (
+          <div className="space-y-10">
+            <Dashboard 
+              transactions={transactions} 
+              selectedDate={selectedDate} 
+              onDateChange={setSelectedDate}
+              isDarkMode={isDarkMode}
+              language={language}
+            />
+            <div className="w-full">
+              <TransactionTable 
+                transactions={filteredTransactions} 
+                onViewAll={() => setCurrentView('transactions')}
+                language={language}
+              />
+            </div>
+          </div>
+        );
+      case 'transactions':
+        return (
+          <div className="w-full animate-in slide-in-from-bottom-4 duration-500">
+            <TransactionTable 
+              transactions={filteredTransactions} 
+              isFullView 
+              language={language}
+            />
+          </div>
+        );
+      case 'settings':
+        return (
+          <Settings 
+            bankName={bankName}
+            setBankName={setBankName}
+            bankLogo={bankLogo}
+            setBankLogo={setBankLogo}
+            userName={userName}
+            setUserName={setUserName}
+            userAvatar={userAvatar}
+            setUserAvatar={setUserAvatar}
+            language={language}
+            setLanguage={setLanguage}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#F8F9FA] dark:bg-[#0F172A] text-[#1A1A1A] dark:text-slate-100 transition-colors duration-300">
+      <Layout 
+        isDarkMode={isDarkMode} 
+        onToggleTheme={toggleTheme} 
+        onOpenAddTransaction={() => setIsFormOpen(true)}
+        currentView={currentView}
+        onViewChange={setCurrentView}
+        bankName={bankName}
+        bankLogo={bankLogo}
+        userName={userName}
+        userAvatar={userAvatar}
+        language={language}
+      >
+        <div className="max-w-7xl mx-auto px-4 py-8 space-y-8 animate-in fade-in duration-500">
+          
+          {/* Global Header with Date Selector (Hidden on Settings) */}
+          {currentView !== 'settings' && (
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-slate-200 dark:border-slate-800 pb-8">
+              <div>
+                <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter">
+                  {currentView === 'dashboard' ? (language === 'en' ? 'Overview' : 'ওভারভিউ') : (language === 'en' ? 'Ledger' : 'লেজার')}
+                </h1>
+                <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">
+                  {currentView === 'dashboard' 
+                    ? (language === 'en' ? 'Insight into your daily performance' : 'আপনার দৈনন্দিন কর্মক্ষমতা দেখুন')
+                    : (language === 'en' ? `Transaction history for ${selectedDate}` : `${selectedDate}-এর লেনদেনের ইতিহাস`)}
+                </p>
+              </div>
+              
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">
+                  {language === 'en' ? 'Select Data Range' : 'তারিখ নির্বাচন করুন'}
+                </label>
+                <AdvancedDatePicker selectedDate={selectedDate} onDateChange={setSelectedDate} />
+              </div>
+            </div>
+          )}
+
+          {renderView()}
+        </div>
+      </Layout>
+
+      {/* Transaction Modal Overlay */}
+      {isFormOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-md animate-in zoom-in-95 duration-200">
+            <TransactionForm 
+              onAddTransaction={addTransaction} 
+              onClose={() => setIsFormOpen(false)} 
+              language={language}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default App;
