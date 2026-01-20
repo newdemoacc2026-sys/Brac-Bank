@@ -29,6 +29,20 @@ export interface Disbursement {
   date: string;
 }
 
+export interface FdrDps {
+  id: string;
+  accountTitle: string;
+  accountNumber: string;
+  mobileNumber: string;
+  type: 'FDR' | 'DPS';
+  openingDate: string;
+  maturityDate: string;
+  principalAmount: number;
+  maturityAmount: number;
+  totalInterest: number;
+  status: 'Active' | 'Matured';
+}
+
 export interface DailySummary {
   totalCashIn: number;
   totalCashOut: number;

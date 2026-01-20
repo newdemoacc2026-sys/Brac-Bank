@@ -7,7 +7,8 @@ import { TransactionTable } from './components/TransactionTable';
 import { AdvancedDatePicker } from './components/AdvancedDatePicker';
 import { Settings } from './components/Settings';
 import { DisbursementView } from './components/DisbursementView';
-import { Transaction, TransactionType, Disbursement } from './types';
+import { FdrDpsView } from './components/FdrDpsView';
+import { Transaction, TransactionType, Disbursement, FdrDps } from './types';
 
 const INITIAL_TRANSACTIONS: Transaction[] = [
   { id: '1', timestamp: '2024-05-20T10:30:00', type: TransactionType.CD, amount: 5000, status: 'Success' },
@@ -19,7 +20,7 @@ const INITIAL_TRANSACTIONS: Transaction[] = [
 
 const INITIAL_OFFICERS = ['Officer Rahim', 'Officer Karim', 'Officer Shila'];
 
-export type View = 'dashboard' | 'transactions' | 'disbursements' | 'settings';
+export type View = 'dashboard' | 'transactions' | 'disbursements' | 'fdrDps' | 'settings';
 
 const App: React.FC = () => {
   // Persistence Helper
@@ -45,6 +46,10 @@ const App: React.FC = () => {
     getStoredValue('nexus_disbursements', [])
   );
 
+  const [fdrDpsEntries, setFdrDpsEntries] = useState<FdrDps[]>(() => 
+    getStoredValue('nexus_fdrDps', [])
+  );
+
   const [loanOfficers, setLoanOfficers] = useState<string[]>(() => 
     getStoredValue('nexus_loanOfficers', INITIAL_OFFICERS)
   );
@@ -66,6 +71,10 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('nexus_disbursements', JSON.stringify(disbursements));
   }, [disbursements]);
+
+  useEffect(() => {
+    localStorage.setItem('nexus_fdrDps', JSON.stringify(fdrDpsEntries));
+  }, [fdrDpsEntries]);
 
   useEffect(() => {
     localStorage.setItem('nexus_loanOfficers', JSON.stringify(loanOfficers));
@@ -126,6 +135,22 @@ const App: React.FC = () => {
     setDisbursements(prev => prev.filter(d => d.id !== id));
   };
 
+  const addFdrDps = (newEntry: Omit<FdrDps, 'id'>) => {
+    const entry: FdrDps = {
+      ...newEntry,
+      id: Math.random().toString(36).substr(2, 9)
+    };
+    setFdrDpsEntries(prev => [entry, ...prev]);
+  };
+
+  const updateFdrDps = (id: string, updatedEntry: Omit<FdrDps, 'id'>) => {
+    setFdrDpsEntries(prev => prev.map(e => e.id === id ? { ...updatedEntry, id } : e));
+  };
+
+  const deleteFdrDps = (id: string) => {
+    setFdrDpsEntries(prev => prev.filter(e => e.id !== id));
+  };
+
   const renderView = () => {
     switch (currentView) {
       case 'dashboard':
@@ -168,6 +193,16 @@ const App: React.FC = () => {
             language={language}
           />
         );
+      case 'fdrDps':
+        return (
+          <FdrDpsView 
+            entries={fdrDpsEntries}
+            onAdd={addFdrDps}
+            onUpdate={updateFdrDps}
+            onDelete={deleteFdrDps}
+            language={language}
+          />
+        );
       case 'settings':
         return (
           <Settings 
@@ -206,8 +241,8 @@ const App: React.FC = () => {
       >
         <div className="max-w-7xl mx-auto px-4 py-8 space-y-8 animate-in fade-in duration-500">
           
-          {/* Global Header with Date Selector (Hidden on Settings/Disbursements) */}
-          {(currentView !== 'settings' && currentView !== 'disbursements') && (
+          {/* Global Header with Date Selector */}
+          {(currentView === 'dashboard' || currentView === 'transactions') && (
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-slate-200 dark:border-slate-800 pb-8">
               <div>
                 <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter">

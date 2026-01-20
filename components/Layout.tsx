@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Sun, Moon, LayoutDashboard, History, Settings as SettingsIcon, Bell, Search, User, Plus, HandCoins } from 'lucide-react';
+import { Sun, Moon, LayoutDashboard, History, Settings as SettingsIcon, Bell, Search, User, Plus, HandCoins, PiggyBank } from 'lucide-react';
 import { View } from '../App';
 
 interface LayoutProps {
@@ -34,9 +34,10 @@ export const Layout: React.FC<LayoutProps> = ({
     dashboard: language === 'en' ? 'Dashboard' : 'ড্যাশবোর্ড',
     transactions: language === 'en' ? 'Transactions' : 'লেনদেন',
     disbursements: language === 'en' ? 'Disbursement' : 'ডিসবার্সমেন্ট',
+    fdrDps: language === 'en' ? 'FDR/DPS' : 'এফডিআর/ডিপিএস',
     alerts: language === 'en' ? 'Alerts' : 'সতর্কতা',
     settings: language === 'en' ? 'Settings' : 'সেটিংস',
-    search: language === 'en' ? 'Search transactions...' : 'লেনদেন খুঁজুন...',
+    search: language === 'en' ? 'Search records...' : 'রেকর্ড খুঁজুন...',
     quickAdd: language === 'en' ? 'Quick Add Transaction' : 'নতুন লেনদেন',
   };
 
@@ -66,6 +67,12 @@ export const Layout: React.FC<LayoutProps> = ({
             label={t.disbursements} 
             active={currentView === 'disbursements'} 
             onClick={() => onViewChange('disbursements')}
+          />
+          <NavItem 
+            icon={<PiggyBank size={20} />} 
+            label={t.fdrDps} 
+            active={currentView === 'fdrDps'} 
+            onClick={() => onViewChange('fdrDps')}
           />
           <NavItem 
             icon={<History size={20} />} 
