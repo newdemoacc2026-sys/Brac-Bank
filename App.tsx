@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
@@ -21,14 +20,15 @@ const INITIAL_TRANSACTIONS: Transaction[] = [
 
 const INITIAL_OFFICERS = ['Officer Rahim', 'Officer Karim', 'Officer Shila'];
 
-const INITIAL_FDR_RETAIL = ['AB ABIRAM FIXED DEPOSIT', 'AB GENERAL FIXED DEPOSIT'];
-const INITIAL_FDR_CURRENT = ['FD SME DIPTO REPUBLIC FREEDOM', 'FD SME PRACHURJO', 'FD SME UDDIPON REPUBLIC ABIRAM'];
-const INITIAL_DPS_RETAIL = ['AB FLEXI DPS', 'TARA AB FLEXI DPS'];
-const INITIAL_DPS_CURRENT = ['DPS SHONCHOY SME', 'DPS TARA SHONCHOY SME'];
+const DEFAULT_FDR_RETAIL = ['AB ABIRAM FIXED DEPOSIT', 'AB GENERAL FIXED DEPOSIT'];
+const DEFAULT_FDR_CURRENT = ['FD SME DIPTO REPUBLIC FREEDOM', 'FD SME PRACHURJO', 'FD SME UDDIPON REPUBLIC ABIRAM'];
+const DEFAULT_DPS_RETAIL = ['AB FLEXI DPS', 'TARA AB FLEXI DPS'];
+const DEFAULT_DPS_CURRENT = ['DPS SHONCHOY SME', 'DPS TARA SHONCHOY SME'];
 
 export type View = 'dashboard' | 'transactions' | 'disbursements' | 'fdrDps' | 'alerts' | 'settings';
 
 const App: React.FC = () => {
+  // Persistence Helper
   const getStoredValue = <T,>(key: string, defaultValue: T): T => {
     const stored = localStorage.getItem(key);
     if (!stored) return defaultValue;
@@ -59,20 +59,30 @@ const App: React.FC = () => {
     getStoredValue('nexus_loanOfficers', INITIAL_OFFICERS)
   );
 
-  // Product Name States
-  const [fdrRetailProducts, setFdrRetailProducts] = useState<string[]>(() => getStoredValue('nexus_fdrRetail', INITIAL_FDR_RETAIL));
-  const [fdrCurrentProducts, setFdrCurrentProducts] = useState<string[]>(() => getStoredValue('nexus_fdrCurrent', INITIAL_FDR_CURRENT));
-  const [dpsRetailProducts, setDpsRetailProducts] = useState<string[]>(() => getStoredValue('nexus_dpsRetail', INITIAL_DPS_RETAIL));
-  const [dpsCurrentProducts, setDpsCurrentProducts] = useState<string[]>(() => getStoredValue('nexus_dpsCurrent', INITIAL_DPS_CURRENT));
+  // Dynamic Product Lists
+  const [fdrRetailProducts, setFdrRetailProducts] = useState<string[]>(() => 
+    getStoredValue('nexus_fdrRetail', DEFAULT_FDR_RETAIL)
+  );
+  const [fdrCurrentProducts, setFdrCurrentProducts] = useState<string[]>(() => 
+    getStoredValue('nexus_fdrCurrent', DEFAULT_FDR_CURRENT)
+  );
+  const [dpsRetailProducts, setDpsRetailProducts] = useState<string[]>(() => 
+    getStoredValue('nexus_dpsRetail', DEFAULT_DPS_RETAIL)
+  );
+  const [dpsCurrentProducts, setDpsCurrentProducts] = useState<string[]>(() => 
+    getStoredValue('nexus_dpsCurrent', DEFAULT_DPS_CURRENT)
+  );
   
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   
+  // Settings State
   const [bankName, setBankName] = useState(() => getStoredValue('nexus_bankName', 'Nexus Bank'));
   const [bankLogo, setBankLogo] = useState<string | null>(() => getStoredValue('nexus_bankLogo', null));
   const [language, setLanguage] = useState<'en' | 'bn'>(() => getStoredValue('nexus_language', 'en'));
   const [userName, setUserName] = useState(() => getStoredValue('nexus_userName', 'Admin Panel'));
   const [userAvatar, setUserAvatar] = useState<string | null>(() => getStoredValue('nexus_userAvatar', null));
 
+  // Sync to LocalStorage
   useEffect(() => {
     localStorage.setItem('nexus_transactions', JSON.stringify(transactions));
   }, [transactions]);
@@ -111,8 +121,11 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const root = window.document.documentElement;
-    if (isDarkMode) root.classList.add('dark');
-    else root.classList.remove('dark');
+    if (isDarkMode) {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
   }, [isDarkMode]);
 
   const toggleTheme = () => setIsDarkMode(prev => !prev);
@@ -268,6 +281,8 @@ const App: React.FC = () => {
         language={language}
       >
         <div className="max-w-7xl mx-auto px-4 py-8 space-y-8 animate-in fade-in duration-500">
+          
+          {/* Global Header with Date Selector */}
           {(currentView === 'dashboard' || currentView === 'transactions') && (
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-slate-200 dark:border-slate-800 pb-8">
               <div>
@@ -280,6 +295,7 @@ const App: React.FC = () => {
                     : (language === 'en' ? `Transaction history for ${selectedDate}` : `${selectedDate}-এর লেনদেনের ইতিহাস`)}
                 </p>
               </div>
+              
               <div className="flex flex-col gap-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">
                   {language === 'en' ? 'Select Data Range' : 'তারিখ নির্বাচন করুন'}
@@ -288,13 +304,20 @@ const App: React.FC = () => {
               </div>
             </div>
           )}
+
           {renderView()}
         </div>
       </Layout>
+
+      {/* Transaction Modal Overlay */}
       {isFormOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-full max-md animate-in zoom-in-95 duration-200">
-            <TransactionForm onAddTransaction={addTransaction} onClose={() => setIsFormOpen(false)} language={language} />
+          <div className="w-full max-w-md animate-in zoom-in-95 duration-200">
+            <TransactionForm 
+              onAddTransaction={addTransaction} 
+              onClose={() => setIsFormOpen(false)} 
+              language={language}
+            />
           </div>
         </div>
       )}
