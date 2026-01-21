@@ -52,6 +52,28 @@ export interface FdrDps {
   loanOfficer?: string;
 }
 
+export interface ChequeBook {
+  id: string;
+  accountTitle: string;
+  accountNumber: string;
+  mobileNumber: string;
+  leaves: 25 | 50 | 75 | 100 | 200;
+  startPage: string;
+  endPage: string;
+  loanOfficer: string;
+  receivedDate: string;
+}
+
+export interface DebitCard {
+  id: string;
+  accountNumber: string;
+  mobileNumber: string;
+  cardHolderName: string;
+  cardNumber: string;
+  loanOfficer: string;
+  receivedDate: string;
+}
+
 export interface DailySummary {
   totalCashIn: number;
   totalCashOut: number;

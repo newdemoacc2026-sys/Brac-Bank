@@ -7,8 +7,9 @@ import { AdvancedDatePicker } from './components/AdvancedDatePicker';
 import { Settings } from './components/Settings';
 import { DisbursementView } from './components/DisbursementView';
 import { FdrDpsView } from './components/FdrDpsView';
+import { InventoryView } from './components/InventoryView';
 import { AlertsView } from './components/AlertsView';
-import { Transaction, TransactionType, Disbursement, FdrDps } from './types';
+import { Transaction, TransactionType, Disbursement, FdrDps, ChequeBook, DebitCard } from './types';
 
 const INITIAL_TRANSACTIONS: Transaction[] = [
   { id: '1', timestamp: '2024-05-20T10:30:00', type: TransactionType.CD, amount: 5000, status: 'Success' },
@@ -25,7 +26,7 @@ const DEFAULT_FDR_CURRENT = ['FD SME DIPTO REPUBLIC FREEDOM', 'FD SME PRACHURJO'
 const DEFAULT_DPS_RETAIL = ['AB FLEXI DPS', 'TARA AB FLEXI DPS'];
 const DEFAULT_DPS_CURRENT = ['DPS SHONCHOY SME', 'DPS TARA SHONCHOY SME'];
 
-export type View = 'dashboard' | 'transactions' | 'disbursements' | 'fdrDps' | 'alerts' | 'settings';
+export type View = 'dashboard' | 'transactions' | 'disbursements' | 'fdrDps' | 'inventory' | 'alerts' | 'settings';
 
 const App: React.FC = () => {
   // Persistence Helper
@@ -53,6 +54,14 @@ const App: React.FC = () => {
 
   const [fdrDpsEntries, setFdrDpsEntries] = useState<FdrDps[]>(() => 
     getStoredValue('nexus_fdrDps', [])
+  );
+
+  const [inventoryCheques, setInventoryCheques] = useState<ChequeBook[]>(() => 
+    getStoredValue('nexus_inventoryCheques', [])
+  );
+
+  const [inventoryCards, setInventoryCards] = useState<DebitCard[]>(() => 
+    getStoredValue('nexus_inventoryCards', [])
   );
 
   const [loanOfficers, setLoanOfficers] = useState<string[]>(() => 
@@ -94,6 +103,14 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('nexus_fdrDps', JSON.stringify(fdrDpsEntries));
   }, [fdrDpsEntries]);
+
+  useEffect(() => {
+    localStorage.setItem('nexus_inventoryCheques', JSON.stringify(inventoryCheques));
+  }, [inventoryCheques]);
+
+  useEffect(() => {
+    localStorage.setItem('nexus_inventoryCards', JSON.stringify(inventoryCards));
+  }, [inventoryCards]);
 
   useEffect(() => {
     localStorage.setItem('nexus_loanOfficers', JSON.stringify(loanOfficers));
@@ -177,6 +194,32 @@ const App: React.FC = () => {
     setFdrDpsEntries(prev => prev.filter(e => e.id !== id));
   };
 
+  const addInventoryCheque = (cheque: Omit<ChequeBook, 'id'>) => {
+    const entry: ChequeBook = { ...cheque, id: Math.random().toString(36).substr(2, 9) };
+    setInventoryCheques(prev => [entry, ...prev]);
+  };
+
+  const updateInventoryCheque = (id: string, updated: Omit<ChequeBook, 'id'>) => {
+    setInventoryCheques(prev => prev.map(c => c.id === id ? { ...updated, id } : c));
+  };
+
+  const deleteInventoryCheque = (id: string) => {
+    setInventoryCheques(prev => prev.filter(c => c.id !== id));
+  };
+
+  const addInventoryCard = (card: Omit<DebitCard, 'id'>) => {
+    const entry: DebitCard = { ...card, id: Math.random().toString(36).substr(2, 9) };
+    setInventoryCards(prev => [entry, ...prev]);
+  };
+
+  const updateInventoryCard = (id: string, updated: Omit<DebitCard, 'id'>) => {
+    setInventoryCards(prev => prev.map(c => c.id === id ? { ...updated, id } : c));
+  };
+
+  const deleteInventoryCard = (id: string) => {
+    setInventoryCards(prev => prev.filter(c => c.id !== id));
+  };
+
   const renderView = () => {
     switch (currentView) {
       case 'dashboard':
@@ -231,6 +274,21 @@ const App: React.FC = () => {
             onAdd={addFdrDps}
             onUpdate={updateFdrDps}
             onDelete={deleteFdrDps}
+            language={language}
+          />
+        );
+      case 'inventory':
+        return (
+          <InventoryView 
+            cheques={inventoryCheques}
+            cards={inventoryCards}
+            loanOfficers={loanOfficers}
+            onAddCheque={addInventoryCheque}
+            onUpdateCheque={updateInventoryCheque}
+            onDeleteCheque={deleteInventoryCheque}
+            onAddCard={addInventoryCard}
+            onUpdateCard={updateInventoryCard}
+            onDeleteCard={deleteInventoryCard}
             language={language}
           />
         );

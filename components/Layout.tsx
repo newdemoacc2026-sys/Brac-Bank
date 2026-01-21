@@ -1,8 +1,9 @@
+
 import React, { useState } from 'react';
 import { 
   Sun, Moon, LayoutDashboard, History, Settings as SettingsIcon, 
   Bell, Search, User, Plus, HandCoins, PiggyBank,
-  PanelLeftClose, PanelLeftOpen
+  PanelLeftClose, PanelLeftOpen, CreditCard
 } from 'lucide-react';
 import { View } from '../App';
 
@@ -40,6 +41,7 @@ export const Layout: React.FC<LayoutProps> = ({
     transactions: language === 'en' ? 'Transactions' : 'লেনদেন',
     disbursements: language === 'en' ? 'Disbursement' : 'ডিসবার্সমেন্ট',
     fdrDps: language === 'en' ? 'FDR/DPS' : 'এফডিআর/ডিপিএস',
+    inventory: language === 'en' ? 'Cards & Cheques' : 'কার্ড ও চেক',
     alerts: language === 'en' ? 'Alerts' : 'সতর্কতা',
     settings: language === 'en' ? 'Settings' : 'সেটিংস',
     search: language === 'en' ? 'Search records...' : 'রেকর্ড খুঁজুন...',
@@ -87,6 +89,14 @@ export const Layout: React.FC<LayoutProps> = ({
             onClick={() => onViewChange('fdrDps')}
             isCollapsed={isCollapsed}
           />
+          {/* New Inventory Nav Item */}
+          <NavItem 
+            icon={<CreditCard size={22} />} 
+            label={t.inventory} 
+            active={currentView === 'inventory'} 
+            onClick={() => onViewChange('inventory')}
+            isCollapsed={isCollapsed}
+          />
           <NavItem 
             icon={<History size={22} />} 
             label={t.transactions} 
@@ -113,7 +123,7 @@ export const Layout: React.FC<LayoutProps> = ({
 
       {/* Main Content Area */}
       <main className={`flex-1 ${mainMargin} transition-all duration-300 min-h-screen`}>
-        {/* Header Bar - Now Unified for all views and includes Bank Identity */}
+        {/* Header Bar - Unified for all views and includes Bank Identity */}
         <header className="sticky top-0 h-16 bg-white/90 dark:bg-[#0F172A]/90 backdrop-blur-lg border-b border-slate-200 dark:border-slate-800 px-4 md:px-8 flex items-center justify-between z-30 transition-theme">
           
           <div className="flex items-center gap-4 flex-1">
