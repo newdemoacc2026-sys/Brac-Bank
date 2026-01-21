@@ -34,6 +34,7 @@ export interface FdrDps {
   accountTitle: string;
   accountNumber: string; // Savings/Current Acc
   dpsAccountNumber?: string;
+  fdrAccountNumber?: string;
   mobileNumber: string;
   type: 'FDR' | 'DPS';
   accountCategory?: 'Retail' | 'Current';
