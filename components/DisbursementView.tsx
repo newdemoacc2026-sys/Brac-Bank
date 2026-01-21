@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   Plus, User, Phone, Hash, Briefcase, Calendar, Trash2, X, 
@@ -502,17 +501,59 @@ export const DisbursementView: React.FC<DisbursementViewProps> = ({
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
+                   {/* Improved Loan Officer Dropdown */}
                    <div className="space-y-1.5 relative" ref={officerRef}>
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 flex items-center gap-1.5"><Briefcase size={12} /> {t.officer}</label>
-                    <button type="button" onClick={() => setIsOfficerOpen(!isOfficerOpen)} className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-5 py-3.5 text-sm font-semibold text-left dark:text-white flex items-center justify-between">{formData.loanOfficer || t.selectOfficer} <ChevronDown size={16} /></button>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 flex items-center gap-1.5">
+                      <Briefcase size={12} /> {t.officer}
+                    </label>
+                    <button 
+                      type="button" 
+                      onClick={() => setIsOfficerOpen(!isOfficerOpen)} 
+                      className={`w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-5 py-3.5 text-sm font-semibold text-left dark:text-white flex items-center justify-between transition-all ${
+                        isOfficerOpen ? 'ring-4 ring-blue-500/10 border-blue-500 shadow-sm' : 'hover:border-slate-300'
+                      }`}
+                    >
+                      <span className="truncate">{formData.loanOfficer || t.selectOfficer}</span>
+                      <ChevronDown size={16} className={`text-slate-400 transition-transform duration-300 ${isOfficerOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    
                     {isOfficerOpen && (
-                      <div className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl py-2 z-[110] max-h-40 overflow-y-auto custom-scrollbar">
-                        {loanOfficers.map((off, idx) => (
-                          <button key={idx} type="button" onClick={() => { setFormData({...formData, loanOfficer: off}); setIsOfficerOpen(false); }} className={`w-full px-5 py-2 text-left text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-700 dark:text-white ${formData.loanOfficer === off ? 'text-blue-600 bg-blue-50' : ''}`}>{off}</button>
-                        ))}
+                      <div className="absolute bottom-full left-0 right-0 mb-3 bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl py-2 z-[110] max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-150">
+                        <div className="px-4 py-2 border-b border-slate-50 dark:border-slate-800/50 mb-1">
+                          <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Available Officers</p>
+                        </div>
+                        {loanOfficers.map((off, idx) => {
+                          const isSelected = formData.loanOfficer === off;
+                          return (
+                            <button 
+                              key={idx} 
+                              type="button" 
+                              onClick={() => { 
+                                setFormData({...formData, loanOfficer: off}); 
+                                setIsOfficerOpen(false); 
+                              }} 
+                              className={`w-full px-5 py-3 text-left text-xs font-black transition-all flex items-center justify-between ${
+                                isSelected 
+                                  ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' 
+                                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-[10px] ${
+                                  isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
+                                }`}>
+                                  {off.charAt(0)}
+                                </div>
+                                {off}
+                              </div>
+                              {isSelected && <Check size={14} strokeWidth={3} />}
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
+
                   <div className="space-y-1.5 relative" ref={datePickerRef}>
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 flex items-center gap-1.5"><Calendar size={12} /> {t.date}</label>
                     <button 
@@ -592,16 +633,30 @@ export const DisbursementView: React.FC<DisbursementViewProps> = ({
 
       {/* Delete Confirmation Modal */}
       {deletingId && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="w-full max-sm bg-white dark:bg-[#1E293B] rounded-[2rem] shadow-2xl border border-slate-200 dark:border-slate-800 p-8 text-center animate-in zoom-in-95 duration-200">
-             <div className="w-16 h-16 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                <AlertTriangle size={32} />
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-[2px] animate-in fade-in duration-200">
+          <div className="w-full max-w-[320px] bg-white dark:bg-[#1E293B] rounded-[1.5rem] shadow-2xl border border-slate-200 dark:border-slate-800 p-6 text-center animate-in zoom-in-95 duration-200">
+             <div className="w-12 h-12 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <AlertTriangle size={24} />
              </div>
-             <h3 className="text-lg font-black text-slate-900 dark:text-white leading-tight mb-2">{language === 'en' ? 'Confirm Deletion' : 'মুছে ফেলার নিশ্চিতকরণ'}</h3>
-             <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mb-8 leading-relaxed">{t.confirmDelete}</p>
-             <div className="flex gap-3">
-               <button onClick={() => setDeletingId(null)} className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 transition-colors text-xs">{t.cancel}</button>
-               <button onClick={handlePerformDelete} className="flex-1 py-3 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl shadow-lg shadow-rose-500/20 transition-all text-xs uppercase tracking-wider">{t.deleteAction}</button>
+             <h3 className="text-base font-black text-slate-900 dark:text-white leading-tight mb-1">
+               {language === 'en' ? 'Delete Record?' : 'রেকর্ড মুছবেন?'}
+             </h3>
+             <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mb-6 px-2">
+               {language === 'en' ? 'This action cannot be undone.' : 'এই কাজটি আর ফিরে পাওয়া যাবে না।'}
+             </p>
+             <div className="flex gap-2">
+               <button 
+                onClick={() => setDeletingId(null)} 
+                className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 transition-colors text-[11px]"
+               >
+                 {t.cancel}
+               </button>
+               <button 
+                onClick={handlePerformDelete} 
+                className="flex-1 py-2.5 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl shadow-lg shadow-rose-500/20 transition-all text-[11px] uppercase tracking-wider"
+               >
+                 {language === 'en' ? 'Delete' : 'মুছুন'}
+               </button>
              </div>
           </div>
         </div>
