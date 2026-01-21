@@ -8,6 +8,7 @@ import { AdvancedDatePicker } from './components/AdvancedDatePicker';
 import { Settings } from './components/Settings';
 import { DisbursementView } from './components/DisbursementView';
 import { FdrDpsView } from './components/FdrDpsView';
+import { AlertsView } from './components/AlertsView';
 import { Transaction, TransactionType, Disbursement, FdrDps } from './types';
 
 const INITIAL_TRANSACTIONS: Transaction[] = [
@@ -20,7 +21,7 @@ const INITIAL_TRANSACTIONS: Transaction[] = [
 
 const INITIAL_OFFICERS = ['Officer Rahim', 'Officer Karim', 'Officer Shila'];
 
-export type View = 'dashboard' | 'transactions' | 'disbursements' | 'fdrDps' | 'settings';
+export type View = 'dashboard' | 'transactions' | 'disbursements' | 'fdrDps' | 'alerts' | 'settings';
 
 const App: React.FC = () => {
   // Persistence Helper
@@ -197,12 +198,15 @@ const App: React.FC = () => {
         return (
           <FdrDpsView 
             entries={fdrDpsEntries}
+            loanOfficers={loanOfficers}
             onAdd={addFdrDps}
             onUpdate={updateFdrDps}
             onDelete={deleteFdrDps}
             language={language}
           />
         );
+      case 'alerts':
+        return <AlertsView language={language} />;
       case 'settings':
         return (
           <Settings 

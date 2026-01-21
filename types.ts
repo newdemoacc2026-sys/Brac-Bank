@@ -32,15 +32,23 @@ export interface Disbursement {
 export interface FdrDps {
   id: string;
   accountTitle: string;
-  accountNumber: string;
+  accountNumber: string; // Savings/Current Acc
+  dpsAccountNumber?: string;
   mobileNumber: string;
   type: 'FDR' | 'DPS';
+  accountCategory?: 'Retail' | 'Current';
+  productName?: string;
+  tenor?: number; // In months
+  installmentAmount?: number;
   openingDate: string;
   maturityDate: string;
-  principalAmount: number;
+  endDate?: string;
+  principalAmount: number; // For FDR or Total Deposit for DPS
   maturityAmount: number;
   totalInterest: number;
+  interestRate?: number;
   status: 'Active' | 'Matured';
+  loanOfficer?: string;
 }
 
 export interface DailySummary {
