@@ -5,7 +5,7 @@ import {
   AlertCircle, ChevronLeft, ChevronRight, Check, ChevronDown,
   PiggyBank, ArrowUpRight, ArrowDownRight, Layers, Pencil,
   ArrowRight, Calculator, Landmark, ShieldCheck, TrendingUp,
-  Briefcase, Tag, Percent, Info, AlertTriangle, Search, Filter
+  Briefcase, Tag, Percent, Info, AlertTriangle, Search, Filter, UserCheck
 } from 'lucide-react';
 import { FdrDps } from '../types';
 import { formatCurrency } from '../utils/finance';
@@ -29,18 +29,21 @@ export const FdrDpsView: React.FC<FdrDpsViewProps> = ({ entries, loanOfficers, o
   const [activeSegment, setActiveSegment] = useState<'FDR' | 'DPS'>('FDR');
   const [activeDatePicker, setActiveDatePicker] = useState<'opening' | 'maturity' | null>(null);
   const [isOfficerOpen, setIsOfficerOpen] = useState(false);
+  const [isOfficerFilterOpen, setIsOfficerFilterOpen] = useState(false);
   const [isProductOpen, setIsProductOpen] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   
-  // Search State
+  // Search & Filter State
   const [searchQuery, setSearchQuery] = useState('');
   const [searchCriteria, setSearchCriteria] = useState<SearchCriteria>('accountNumber');
+  const [officerFilter, setOfficerFilter] = useState<string>('ALL');
   
   // Track the visible month/year in the calendar popup
   const [calViewDate, setCalViewDate] = useState(new Date());
   
   const datePickerRef = useRef<HTMLDivElement>(null);
   const officerRef = useRef<HTMLDivElement>(null);
+  const officerFilterRef = useRef<HTMLDivElement>(null);
   const productRef = useRef<HTMLDivElement>(null);
   
   const [formData, setFormData] = useState<Omit<FdrDps, 'id'>>({
@@ -90,6 +93,7 @@ export const FdrDpsView: React.FC<FdrDpsViewProps> = ({ entries, loanOfficers, o
     retail: language === 'en' ? 'Retail' : 'রিটেইল',
     current: language === 'en' ? 'Current' : 'কারেন্ট',
     officer: language === 'en' ? 'Loan Officer' : 'লোন অফিসার',
+    allOfficers: language === 'en' ? 'All Officers' : 'সব অফিসার',
     selectOfficer: language === 'en' ? 'Select Officer' : 'অফিসার নির্বাচন করুন',
     errNumbersNotAllowed: language === 'en' ? 'Numbers are not allowed' : 'সংখ্যা অনুমোদিত নয়',
     errLettersNotAllowed: language === 'en' ? 'Letters are not allowed' : 'অক্ষর অনুমোদিত নয়',
@@ -102,7 +106,7 @@ export const FdrDpsView: React.FC<FdrDpsViewProps> = ({ entries, loanOfficers, o
     searchPlaceholder: language === 'en' ? 'Search records...' : 'রেকর্ড খুঁজুন...',
     criteriaAcc: language === 'en' ? 'Account No' : 'অ্যাকাউন্ট নম্বর',
     criteriaMob: language === 'en' ? 'Mobile No' : 'মোবাইল নম্বর',
-    noSearchResults: language === 'en' ? 'No results found for your search.' : 'আপনার অনুসন্ধানের কোনো ফলাফল পাওয়া যায়নি।',
+    noSearchResults: language === 'en' ? 'No data found with this Account or Mobile number' : 'এই অ্যাকাউন্ট নম্বর বা মোবাইল নম্বর দিয়ে কোনো তথ্য পাওয়া যায়নি',
   };
 
   // Product Lists
@@ -245,6 +249,7 @@ export const FdrDpsView: React.FC<FdrDpsViewProps> = ({ entries, loanOfficers, o
     const handleClickOutside = (event: MouseEvent) => {
       if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) setActiveDatePicker(null);
       if (officerRef.current && !officerRef.current.contains(event.target as Node)) setIsOfficerOpen(false);
+      if (officerFilterRef.current && !officerFilterRef.current.contains(event.target as Node)) setIsOfficerFilterOpen(false);
       if (productRef.current && !productRef.current.contains(event.target as Node)) setIsProductOpen(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -307,18 +312,38 @@ export const FdrDpsView: React.FC<FdrDpsViewProps> = ({ entries, loanOfficers, o
     handleClose();
   };
 
-  // Filtered Entries based on search
+  // Filtered Entries logic
   const filteredEntries = useMemo(() => {
-    if (!searchQuery.trim()) return entries;
+    let results = entries;
     const query = searchQuery.trim();
-    return entries.filter(entry => {
-      const valToSearch = searchCriteria === 'accountNumber' ? entry.accountNumber : entry.mobileNumber;
-      return valToSearch?.includes(query);
-    });
-  }, [entries, searchQuery, searchCriteria]);
+
+    // 1. Filter by Search Query (Corrected to include all account fields)
+    if (query) {
+      results = results.filter(entry => {
+        if (searchCriteria === 'accountNumber') {
+          return (
+            entry.accountNumber?.includes(query) || 
+            entry.dpsAccountNumber?.includes(query) || 
+            entry.fdrAccountNumber?.includes(query)
+          );
+        }
+        return entry.mobileNumber?.includes(query);
+      });
+    }
+
+    // 2. Filter by Loan Officer
+    if (officerFilter !== 'ALL') {
+      results = results.filter(entry => entry.loanOfficer === officerFilter);
+    }
+
+    return results;
+  }, [entries, searchQuery, searchCriteria, officerFilter]);
 
   const fdrEntries = filteredEntries.filter(e => e.type === 'FDR');
   const dpsEntries = filteredEntries.filter(e => e.type === 'DPS');
+
+  const displayItems = activeSegment === 'FDR' ? fdrEntries : dpsEntries;
+  const isFiltered = searchQuery.trim().length > 0 || officerFilter !== 'ALL';
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-20">
@@ -341,7 +366,7 @@ export const FdrDpsView: React.FC<FdrDpsViewProps> = ({ entries, loanOfficers, o
       </div>
 
       {/* Search & Filter Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white dark:bg-[#1E293B] p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm transition-theme">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white dark:bg-[#1E293B] p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm transition-theme">
         <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-4">
            {/* Search Input */}
            <div className="relative flex-1">
@@ -355,28 +380,73 @@ export const FdrDpsView: React.FC<FdrDpsViewProps> = ({ entries, loanOfficers, o
               />
            </div>
            
-           {/* Criteria Selector */}
-           <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-              <button 
-                onClick={() => setSearchCriteria('accountNumber')}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-tight transition-all ${
-                  searchCriteria === 'accountNumber'
-                    ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'
-                }`}
-              >
-                <Hash size={12} /> {t.criteriaAcc}
-              </button>
-              <button 
-                onClick={() => setSearchCriteria('mobileNumber')}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-tight transition-all ${
-                  searchCriteria === 'mobileNumber'
-                    ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'
-                }`}
-              >
-                <Phone size={12} /> {t.criteriaMob}
-              </button>
+           <div className="flex items-center gap-2">
+              {/* Criteria Selector */}
+              <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                <button 
+                  onClick={() => setSearchCriteria('accountNumber')}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-tight transition-all ${
+                    searchCriteria === 'accountNumber'
+                      ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'
+                  }`}
+                >
+                  <Hash size={12} /> {t.criteriaAcc}
+                </button>
+                <button 
+                  onClick={() => setSearchCriteria('mobileNumber')}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-tight transition-all ${
+                    searchCriteria === 'mobileNumber'
+                      ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'
+                  }`}
+                >
+                  <Phone size={12} /> {t.criteriaMob}
+                </button>
+              </div>
+
+              {/* Officer Filter Selection */}
+              <div className="relative" ref={officerFilterRef}>
+                <button 
+                  onClick={() => setIsOfficerFilterOpen(!isOfficerFilterOpen)}
+                  className={`flex items-center gap-2 px-4 py-3 rounded-xl border transition-all text-[11px] font-black uppercase tracking-wider h-[44px] ${
+                    officerFilter !== 'ALL' 
+                      ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/20' 
+                      : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                  }`}
+                >
+                   <UserCheck size={14} strokeWidth={3} />
+                   <span className="hidden sm:inline">{officerFilter === 'ALL' ? t.allOfficers : officerFilter}</span>
+                   <ChevronDown size={14} className={`transition-transform duration-300 ${isOfficerFilterOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {isOfficerFilterOpen && (
+                  <div className="absolute top-full right-0 mt-3 w-56 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl py-2 z-[60] animate-in fade-in zoom-in-95 duration-150">
+                     <button 
+                       onClick={() => { setOfficerFilter('ALL'); setIsOfficerFilterOpen(false); }}
+                       className={`w-full flex items-center justify-between px-4 py-2.5 text-xs font-black transition-all ${
+                         officerFilter === 'ALL' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                       }`}
+                     >
+                       {t.allOfficers}
+                       {officerFilter === 'ALL' && <Check size={14} />}
+                     </button>
+                     <div className="h-[1px] bg-slate-100 dark:bg-slate-700 my-1 mx-2" />
+                     {loanOfficers.map(off => (
+                       <button 
+                         key={off}
+                         onClick={() => { setOfficerFilter(off); setIsOfficerFilterOpen(false); }}
+                         className={`w-full flex items-center justify-between px-4 py-2.5 text-xs font-black transition-all ${
+                           officerFilter === off ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                         }`}
+                       >
+                         {off}
+                         {officerFilter === off && <Check size={14} />}
+                       </button>
+                     ))}
+                  </div>
+                )}
+              </div>
            </div>
         </div>
       </div>
@@ -426,8 +496,8 @@ export const FdrDpsView: React.FC<FdrDpsViewProps> = ({ entries, loanOfficers, o
 
       {/* Box View (Card-based Layout) */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 animate-in slide-in-from-bottom-4 duration-500">
-        {(activeSegment === 'FDR' ? fdrEntries : dpsEntries).length > 0 ? (
-          (activeSegment === 'FDR' ? fdrEntries : dpsEntries).map(entry => (
+        {displayItems.length > 0 ? (
+          displayItems.map(entry => (
             <EntryCard 
               key={entry.id} 
               entry={entry} 
@@ -437,13 +507,24 @@ export const FdrDpsView: React.FC<FdrDpsViewProps> = ({ entries, loanOfficers, o
             />
           ))
         ) : (
-          <div className="col-span-full py-20 text-center bg-white dark:bg-[#1E293B] rounded-[2rem] border-2 border-dashed border-slate-200 dark:border-slate-800">
-            <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300 dark:text-slate-600">
-              <Info size={32} />
+          <div className="col-span-full py-24 text-center bg-white dark:bg-[#1E293B] rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-md animate-in zoom-in-95 duration-500">
+            <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300 dark:text-slate-600">
+              {isFiltered ? <Search size={40} /> : <Info size={40} />}
             </div>
-            <p className="text-slate-400 font-bold italic">
-              {searchQuery ? t.noSearchResults : (activeSegment === 'FDR' ? t.noFdr : t.noDps)}
+            <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2">
+              {isFiltered ? (language === 'en' ? 'No Matches Found' : 'কোন মিল পাওয়া যায়নি') : (activeSegment === 'FDR' ? t.noFdr : t.noDps)}
+            </h3>
+            <p className="text-slate-400 font-bold italic px-8 max-w-md mx-auto">
+              {isFiltered ? t.noSearchResults : (activeSegment === 'FDR' ? t.noFdr : t.noDps)}
             </p>
+            {isFiltered && (
+              <button 
+                onClick={() => { setSearchQuery(''); setOfficerFilter('ALL'); }}
+                className="mt-6 text-xs font-black text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                {language === 'en' ? 'Clear all filters' : 'সব ফিল্টার মুছুন'}
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -698,9 +779,9 @@ const EntryCard: React.FC<{
            {entry.loanOfficer && (
              <div className="flex items-center gap-2 mt-1">
                 <div className="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[8px] font-black text-slate-500">
-                  {entry.loanOfficer.charAt(0)}
+                   <Briefcase size={10} />
                 </div>
-                <span className="text-[10px] font-bold text-slate-500 truncate">{entry.loanOfficer}</span>
+                <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 truncate">{entry.loanOfficer}</span>
              </div>
            )}
            <div className="flex items-center gap-1.5 mt-1 text-[10px] font-bold text-slate-400">
@@ -732,7 +813,7 @@ const SummaryCard: React.FC<{
 }> = ({ title, value, icon, color, active, onClick }) => (
   <button 
     onClick={onClick}
-    className={`p-7 rounded-[2.5rem] border transition-all duration-300 flex flex-col items-start text-left w-full group ${
+    className={`p-7 rounded-[2.5rem] border transition-all duration-300 flex flex-col items-start text-left w-full group relative ${
       active 
         ? (color === 'blue' ? 'bg-blue-600 border-blue-500 shadow-xl shadow-blue-500/30' : 'bg-purple-600 border-purple-500 shadow-xl shadow-purple-500/30')
         : 'bg-white dark:bg-[#1E293B] border-slate-200 dark:border-slate-800 shadow-md hover:shadow-lg'
