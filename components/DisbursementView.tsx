@@ -12,6 +12,8 @@ import { AdvancedDatePicker } from './AdvancedDatePicker';
 interface DisbursementViewProps {
   disbursements: Disbursement[];
   loanOfficers: string[];
+  initialFilter?: string | null;
+  onClearInitialFilter?: () => void;
   onAddDisbursement: (dis: Omit<Disbursement, 'id'>) => void;
   onUpdateDisbursement: (id: string, dis: Omit<Disbursement, 'id'>) => void;
   onDeleteDisbursement: (id: string) => void;
@@ -23,6 +25,8 @@ type SearchCriteria = 'accountNumber' | 'mobileNumber';
 export const DisbursementView: React.FC<DisbursementViewProps> = ({ 
   disbursements, 
   loanOfficers,
+  initialFilter,
+  onClearInitialFilter,
   onAddDisbursement, 
   onUpdateDisbursement,
   onDeleteDisbursement,
@@ -36,7 +40,7 @@ export const DisbursementView: React.FC<DisbursementViewProps> = ({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   
   // Search & Filter State
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(initialFilter || '');
   const [searchCriteria, setSearchCriteria] = useState<SearchCriteria>('accountNumber');
   const [officerFilter, setOfficerFilter] = useState<string>('ALL');
   
@@ -57,6 +61,14 @@ export const DisbursementView: React.FC<DisbursementViewProps> = ({
     loanOfficer: '',
     date: new Date().toISOString().split('T')[0]
   });
+
+  // Apply initial filter if it changes
+  useEffect(() => {
+    if (initialFilter) {
+      setSearchQuery(initialFilter);
+      setSearchCriteria('accountNumber');
+    }
+  }, [initialFilter]);
 
   const months = [
     'January', 'February', 'March', 'April', 'May', ' June',
@@ -295,6 +307,14 @@ export const DisbursementView: React.FC<DisbursementViewProps> = ({
                 onChange={(e) => setSearchQuery(e.target.value)} 
                 className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl pl-11 pr-4 py-3 text-sm font-bold outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all dark:text-white" 
               />
+              {(searchQuery || initialFilter) && (
+                <button 
+                  onClick={() => { setSearchQuery(''); onClearInitialFilter?.(); }}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-rose-500"
+                >
+                  <X size={16} />
+                </button>
+              )}
            </div>
 
            {/* Criteria & Officer Dropdown */}
@@ -325,7 +345,7 @@ export const DisbursementView: React.FC<DisbursementViewProps> = ({
                   className={`flex items-center gap-2 px-4 py-3.5 rounded-xl border transition-all text-[11px] font-black uppercase tracking-wider ${
                     officerFilter !== 'ALL' 
                       ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/20' 
-                      : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-blue-400'
+                      : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-blue-400'
                   }`}
                  >
                    <UserCheck size={14} strokeWidth={3} />
@@ -420,7 +440,7 @@ export const DisbursementView: React.FC<DisbursementViewProps> = ({
              </p>
              {isSearching && (
                <button 
-                 onClick={() => { setSearchQuery(''); setOfficerFilter('ALL'); }}
+                 onClick={() => { setSearchQuery(''); setOfficerFilter('ALL'); onClearInitialFilter?.(); }}
                  className="mt-6 text-xs font-black text-blue-600 dark:text-blue-400 hover:underline"
                >
                  {language === 'en' ? 'Clear All Filters' : 'সব ফিল্টার মুছুন'}
@@ -483,11 +503,11 @@ export const DisbursementView: React.FC<DisbursementViewProps> = ({
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 flex items-center gap-1.5"><Hash size={12} /> {t.accNo}</label>
-                    <input required type="text" value={formData.accountNumber} onChange={e => handleInputChange('accountNumber', e.target.value)} className={`w-full bg-slate-50 dark:bg-slate-900/50 border rounded-2xl px-5 py-3.5 text-sm font-semibold outline-none dark:text-white ${errors.accountNumber ? 'border-rose-500' : 'border-slate-200 dark:border-slate-700 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500'}`} />
+                    <input required type="text" value={formData.accountNumber} onChange={e => handleInputChange('accountNumber', e.target.value)} className={`w-full bg-slate-50 dark:bg-slate-900/50 border rounded-2xl px-5 py-3.5 text-sm font-semibold outline-none transition-all dark:text-white ${errors.accountNumber ? 'border-rose-500' : 'border-slate-200 dark:border-slate-700 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500'}`} />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 flex items-center gap-1.5"><Phone size={12} /> {t.mobile}</label>
-                    <input required type="tel" value={formData.mobileNumber} onChange={e => handleInputChange('mobileNumber', e.target.value)} className={`w-full bg-slate-50 dark:bg-slate-900/50 border rounded-2xl px-5 py-3.5 text-sm font-semibold outline-none dark:text-white ${errors.mobileNumber ? 'border-rose-500' : 'border-slate-200 dark:border-slate-700 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500'}`} />
+                    <input required type="tel" value={formData.mobileNumber} onChange={e => handleInputChange('mobileNumber', e.target.value)} className={`w-full bg-slate-50 dark:bg-slate-900/50 border rounded-2xl px-5 py-3.5 text-sm font-semibold outline-none transition-all dark:text-white ${errors.mobileNumber ? 'border-rose-500' : 'border-slate-200 dark:border-slate-700 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500'}`} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">

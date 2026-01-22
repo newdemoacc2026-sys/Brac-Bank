@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { 
   Sun, Moon, LayoutDashboard, History, Settings as SettingsIcon, 
   Bell, Search, User, Plus, HandCoins, PiggyBank,
-  PanelLeftClose, PanelLeftOpen, CreditCard
+  PanelLeftClose, PanelLeftOpen, CreditCard, SearchCode
 } from 'lucide-react';
 import { View } from '../App';
 
@@ -42,6 +42,7 @@ export const Layout: React.FC<LayoutProps> = ({
     disbursements: language === 'en' ? 'Disbursement' : 'ডিসবার্সমেন্ট',
     fdrDps: language === 'en' ? 'FDR/DPS' : 'এফডিআর/ডিপিএস',
     inventory: language === 'en' ? 'Cards & Cheques' : 'কার্ড ও চেক',
+    accounts: language === 'en' ? 'Acc Inquiry' : 'অ্যাকাউন্ট অনুসন্ধান',
     alerts: language === 'en' ? 'Alerts' : 'সতর্কতা',
     settings: language === 'en' ? 'Settings' : 'সেটিংস',
     search: language === 'en' ? 'Search records...' : 'রেকর্ড খুঁজুন...',
@@ -76,6 +77,13 @@ export const Layout: React.FC<LayoutProps> = ({
             isCollapsed={isCollapsed}
           />
           <NavItem 
+            icon={<SearchCode size={22} />} 
+            label={t.accounts} 
+            active={currentView === 'accounts'} 
+            onClick={() => onViewChange('accounts')}
+            isCollapsed={isCollapsed}
+          />
+          <NavItem 
             icon={<HandCoins size={22} />} 
             label={t.disbursements} 
             active={currentView === 'disbursements'} 
@@ -89,7 +97,6 @@ export const Layout: React.FC<LayoutProps> = ({
             onClick={() => onViewChange('fdrDps')}
             isCollapsed={isCollapsed}
           />
-          {/* New Inventory Nav Item */}
           <NavItem 
             icon={<CreditCard size={22} />} 
             label={t.inventory} 

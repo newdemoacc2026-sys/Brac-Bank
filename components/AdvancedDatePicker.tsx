@@ -41,7 +41,6 @@ export const AdvancedDatePicker: React.FC<AdvancedDatePickerProps> = ({ selected
   const handleMonthSelect = (mIndex: number) => {
     const newDate = new Date(date);
     newDate.setMonth(mIndex);
-    // Adjust day if month has fewer days
     const lastDayOfMonth = new Date(newDate.getFullYear(), mIndex + 1, 0).getDate();
     if (newDate.getDate() > lastDayOfMonth) {
       newDate.setDate(lastDayOfMonth);
@@ -64,7 +63,6 @@ export const AdvancedDatePicker: React.FC<AdvancedDatePickerProps> = ({ selected
     setIsDayOpen(false);
   };
 
-  // Helper to generate days for the calendar view
   const daysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
   const firstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
 
@@ -78,14 +76,13 @@ export const AdvancedDatePicker: React.FC<AdvancedDatePickerProps> = ({ selected
   return (
     <div className="flex items-center gap-1.5 bg-white dark:bg-[#1E293B] p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-lg">
       
-      {/* Icon Decorator */}
       <div className="flex items-center justify-center w-10 h-10 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-blue-600 dark:text-blue-400">
         <CalendarIcon size={18} />
       </div>
 
       <div className="flex items-center gap-1 h-10">
         
-        {/* Custom Month Dropdown */}
+        {/* Custom Month Dropdown - Set to open upwards */}
         <div className="relative h-full" ref={monthRef}>
           <button 
             onClick={() => { setIsMonthOpen(!isMonthOpen); setIsYearOpen(false); setIsDayOpen(false); }}
@@ -100,7 +97,7 @@ export const AdvancedDatePicker: React.FC<AdvancedDatePickerProps> = ({ selected
           </button>
           
           {isMonthOpen && (
-            <div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl py-2 z-50 animate-in fade-in zoom-in-95 duration-100 max-h-64 overflow-y-auto custom-scrollbar">
+            <div className="absolute bottom-full left-0 mb-2 w-48 bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl py-2 z-[9999] animate-in fade-in zoom-in-95 duration-100 max-h-64 overflow-y-auto custom-scrollbar">
               {months.map((m, i) => (
                 <button
                   key={m}
@@ -121,7 +118,7 @@ export const AdvancedDatePicker: React.FC<AdvancedDatePickerProps> = ({ selected
 
         <div className="w-[1px] h-4 bg-slate-200 dark:bg-slate-800 mx-0.5" />
 
-        {/* Custom Year Dropdown */}
+        {/* Custom Year Dropdown - Set to open upwards */}
         <div className="relative h-full" ref={yearRef}>
           <button 
             onClick={() => { setIsYearOpen(!isYearOpen); setIsMonthOpen(false); setIsDayOpen(false); }}
@@ -136,7 +133,7 @@ export const AdvancedDatePicker: React.FC<AdvancedDatePickerProps> = ({ selected
           </button>
           
           {isYearOpen && (
-            <div className="absolute top-full left-0 mt-2 w-32 bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl py-2 z-50 animate-in fade-in zoom-in-95 duration-100 max-h-64 overflow-y-auto custom-scrollbar">
+            <div className="absolute bottom-full left-0 mb-2 w-32 bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl py-2 z-[9999] animate-in fade-in zoom-in-95 duration-100 max-h-64 overflow-y-auto custom-scrollbar">
               {years.map(y => (
                 <button
                   key={y}
@@ -157,7 +154,7 @@ export const AdvancedDatePicker: React.FC<AdvancedDatePickerProps> = ({ selected
 
         <div className="w-[1px] h-4 bg-slate-200 dark:bg-slate-800 mx-0.5" />
 
-        {/* Custom Day Calendar Picker */}
+        {/* Custom Day Calendar Picker - Set to open upwards */}
         <div className="relative h-full" ref={dayRef}>
           <button 
             onClick={() => { setIsDayOpen(!isDayOpen); setIsMonthOpen(false); setIsYearOpen(false); }}
@@ -171,7 +168,7 @@ export const AdvancedDatePicker: React.FC<AdvancedDatePickerProps> = ({ selected
           </button>
           
           {isDayOpen && (
-            <div className="absolute top-full right-0 mt-2 w-72 bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-slate-800 rounded-[1.5rem] shadow-2xl p-4 z-50 animate-in fade-in zoom-in-95 duration-150">
+            <div className="absolute bottom-full right-0 mb-2 w-72 bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-slate-800 rounded-[1.5rem] shadow-2xl p-4 z-[9999] animate-in fade-in zoom-in-95 duration-150">
               <div className="flex items-center justify-between mb-4 px-1">
                 <span className="text-sm font-black text-slate-900 dark:text-white">
                   {months[currentMonth]} {currentYear}

@@ -13,6 +13,8 @@ interface InventoryViewProps {
   cheques: ChequeBook[];
   cards: DebitCard[];
   loanOfficers: string[];
+  initialFilter?: string | null;
+  onClearInitialFilter?: () => void;
   onAddCheque: (cheque: Omit<ChequeBook, 'id'>) => void;
   onUpdateCheque: (id: string, cheque: Omit<ChequeBook, 'id'>) => void;
   onDeleteCheque: (id: string) => void;
@@ -28,7 +30,7 @@ type SearchCriteria = 'title' | 'account' | 'mobile';
 type StatusFilter = 'ALL' | 'Pending' | 'Submitted';
 
 export const InventoryView: React.FC<InventoryViewProps> = ({ 
-  cheques, cards, loanOfficers, 
+  cheques, cards, loanOfficers, initialFilter, onClearInitialFilter,
   onAddCheque, onUpdateCheque, onDeleteCheque, onAddCard, onUpdateCard, onDeleteCard, language 
 }) => {
   const [activeTab, setActiveTab] = useState<Tab>('cheques');
@@ -36,13 +38,21 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingInfo, setDeletingInfo] = useState<{ id: string, type: 'cheque' | 'card' } | null>(null);
   
-  // Filter State
-  const [searchQuery, setSearchQuery] = useState('');
+  // Search & Filter State
+  const [searchQuery, setSearchQuery] = useState(initialFilter || '');
   const [searchCriteria, setSearchCriteria] = useState<SearchCriteria>('account');
   const [officerFilter, setOfficerFilter] = useState<string>('ALL');
   const [isOfficerFilterOpen, setIsOfficerFilterOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [reportDate, setReportDate] = useState<string>(new Date().toISOString().split('T')[0]);
+
+  // Apply initial filter if it changes
+  useEffect(() => {
+    if (initialFilter) {
+      setSearchQuery(initialFilter);
+      setSearchCriteria('account');
+    }
+  }, [initialFilter]);
 
   // Cheque Form State
   const [chequeAccTitle, setChequeAccTitle] = useState('');
@@ -455,6 +465,14 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-transparent border-none pl-9 pr-2 py-1.5 text-sm font-bold outline-none dark:text-white placeholder:text-slate-400"
               />
+              {(searchQuery || initialFilter) && (
+                <button 
+                  onClick={() => { setSearchQuery(''); onClearInitialFilter?.(); }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-rose-500"
+                >
+                  <X size={14} />
+                </button>
+              )}
             </div>
           </div>
 
@@ -895,7 +913,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                     <span className="truncate">{cardOfficer || 'Select Officer'}</span>
                     <ChevronDown size={18} className={`text-slate-400 transition-transform ${isCardOfficerOpen ? 'rotate-180' : ''}`} />
                   </button>
-                  {isCardOfficerOpen && (
+                  {isOfficerOpen && (
                     <div className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl py-2 z-50 max-h-48 overflow-y-auto">
                       {loanOfficers.map(off => (<button key={off} type="button" onClick={() => { setCardOfficer(off); setIsCardOfficerOpen(false); }} className="w-full px-5 py-3 text-left text-sm font-bold hover:bg-slate-50 dark:hover:bg-slate-800 dark:text-white transition-colors">{off}</button>))}
                     </div>
@@ -912,7 +930,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                 </div>
                 <div className="space-y-1.5 relative" ref={cardDeliveryDateRef}>
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 block">{t.delvDate}</label>
-                  <button type="button" onClick={() => setIsCardDeliveryDateOpen(!isCardDeliveryDateOpen)} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-5 py-3 text-sm font-bold text-left dark:text-white flex justify-between items-center transition-all">
+                  <button type="button" onClick={() => setIsCardDeliveryDateOpen(!isCardDeliveryDateOpen)} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-5 py-3 text-sm font-bold text-left dark:text-white flex justify-between items-center transition-all">
                     <span className={cardDeliveryDate ? '' : 'opacity-40'}>{cardDeliveryDate || 'Not Delivered'}</span>
                     <Truck size={16} className="text-emerald-500" />
                   </button>

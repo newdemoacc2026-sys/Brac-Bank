@@ -9,7 +9,8 @@ import { DisbursementView } from './components/DisbursementView';
 import { FdrDpsView } from './components/FdrDpsView';
 import { InventoryView } from './components/InventoryView';
 import { AlertsView } from './components/AlertsView';
-import { Transaction, TransactionType, Disbursement, FdrDps, ChequeBook, DebitCard } from './types';
+import { AccountInquiryView } from './components/AccountInquiryView';
+import { Transaction, TransactionType, Disbursement, FdrDps, ChequeBook, DebitCard, BankAccount } from './types';
 
 const INITIAL_TRANSACTIONS: Transaction[] = [
   { id: '1', timestamp: '2024-05-20T10:30:00', type: TransactionType.CD, amount: 5000, status: 'Success' },
@@ -26,7 +27,7 @@ const DEFAULT_FDR_CURRENT = ['FD SME DIPTO REPUBLIC FREEDOM', 'FD SME PRACHURJO'
 const DEFAULT_DPS_RETAIL = ['AB FLEXI DPS', 'TARA AB FLEXI DPS'];
 const DEFAULT_DPS_CURRENT = ['DPS SHONCHOY SME', 'DPS TARA SHONCHOY SME'];
 
-export type View = 'dashboard' | 'transactions' | 'disbursements' | 'fdrDps' | 'inventory' | 'alerts' | 'settings';
+export type View = 'dashboard' | 'transactions' | 'disbursements' | 'fdrDps' | 'inventory' | 'accounts' | 'alerts' | 'settings';
 
 const App: React.FC = () => {
   // Persistence Helper
@@ -44,8 +45,15 @@ const App: React.FC = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [currentView, setCurrentView] = useState<View>(() => getStoredValue('nexus_lastView', 'dashboard'));
   
+  // NEW: State for cross-navigation filtering
+  const [initialSearchFilter, setInitialSearchFilter] = useState<string | null>(null);
+  
   const [transactions, setTransactions] = useState<Transaction[]>(() => 
     getStoredValue('nexus_transactions', INITIAL_TRANSACTIONS)
+  );
+
+  const [accounts, setAccounts] = useState<BankAccount[]>(() => 
+    getStoredValue('nexus_accounts', [])
   );
 
   const [disbursements, setDisbursements] = useState<Disbursement[]>(() => 
@@ -95,6 +103,10 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('nexus_transactions', JSON.stringify(transactions));
   }, [transactions]);
+
+  useEffect(() => {
+    localStorage.setItem('nexus_accounts', JSON.stringify(accounts));
+  }, [accounts]);
 
   useEffect(() => {
     localStorage.setItem('nexus_disbursements', JSON.stringify(disbursements));
@@ -162,6 +174,19 @@ const App: React.FC = () => {
     setIsFormOpen(false);
   };
 
+  const addBankAccount = (newAcc: Omit<BankAccount, 'id'>) => {
+    const acc: BankAccount = { ...newAcc, id: Math.random().toString(36).substr(2, 9) };
+    setAccounts(prev => [acc, ...prev]);
+  };
+
+  const updateBankAccount = (id: string, updatedAcc: Omit<BankAccount, 'id'>) => {
+    setAccounts(prev => prev.map(a => a.id === id ? { ...updatedAcc, id } : a));
+  };
+
+  const deleteBankAccount = (id: string) => {
+    setAccounts(prev => prev.filter(a => a.id !== id));
+  };
+
   const addDisbursement = (newDis: Omit<Disbursement, 'id'>) => {
     const dis: Disbursement = {
       ...newDis,
@@ -220,6 +245,12 @@ const App: React.FC = () => {
     setInventoryCards(prev => prev.filter(c => c.id !== id));
   };
 
+  // NEW: Handler for cross-linking navigation
+  const navigateToFilteredView = (view: View, accountNo: string) => {
+    setInitialSearchFilter(accountNo);
+    setCurrentView(view);
+  };
+
   const renderView = () => {
     switch (currentView) {
       case 'dashboard':
@@ -241,6 +272,21 @@ const App: React.FC = () => {
             </div>
           </div>
         );
+      case 'accounts':
+        return (
+          <AccountInquiryView 
+            accounts={accounts}
+            loanOfficers={loanOfficers}
+            inventoryCheques={inventoryCheques}
+            inventoryCards={inventoryCards}
+            disbursements={disbursements}
+            onAddAccount={addBankAccount}
+            onUpdateAccount={updateBankAccount}
+            onDeleteAccount={deleteBankAccount}
+            onNavigateToFiltered={navigateToFilteredView}
+            language={language}
+          />
+        );
       case 'transactions':
         return (
           <div className="w-full animate-in slide-in-from-bottom-4 duration-500">
@@ -256,6 +302,8 @@ const App: React.FC = () => {
           <DisbursementView 
             disbursements={disbursements}
             loanOfficers={loanOfficers}
+            initialFilter={initialSearchFilter}
+            onClearInitialFilter={() => setInitialSearchFilter(null)}
             onAddDisbursement={addDisbursement}
             onUpdateDisbursement={updateDisbursement}
             onDeleteDisbursement={deleteDisbursement}
@@ -283,6 +331,8 @@ const App: React.FC = () => {
             cheques={inventoryCheques}
             cards={inventoryCards}
             loanOfficers={loanOfficers}
+            initialFilter={initialSearchFilter}
+            onClearInitialFilter={() => setInitialSearchFilter(null)}
             onAddCheque={addInventoryCheque}
             onUpdateCheque={updateInventoryCheque}
             onDeleteCheque={deleteInventoryCheque}
@@ -331,7 +381,11 @@ const App: React.FC = () => {
         onToggleTheme={toggleTheme} 
         onOpenAddTransaction={() => setIsFormOpen(true)}
         currentView={currentView}
-        onViewChange={setCurrentView}
+        onViewChange={(v) => {
+          // Clear initial filter when navigating manually via layout
+          setInitialSearchFilter(null);
+          setCurrentView(v);
+        }}
         bankName={bankName}
         bankLogo={bankLogo}
         userName={userName}

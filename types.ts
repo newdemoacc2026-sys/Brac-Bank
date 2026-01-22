@@ -78,6 +78,28 @@ export interface DebitCard {
   deliveryDate?: string;
 }
 
+export type AccountCategory = 'Retail' | 'Current' | 'Student' | 'Farmer';
+export type AccountSubCategory = 
+  | 'Savings' 
+  | 'Tara Homemakers' 
+  | 'Tara Probashi Savings' 
+  | 'Salary' 
+  | 'Shadhin' 
+  | 'Uddipona' 
+  | 'Standard';
+
+export interface BankAccount {
+  id: string;
+  accountTitle: string;
+  accountNumber: string;
+  mobileNumber: string;
+  nomineeMobileNumber: string;
+  category: AccountCategory;
+  subCategory: AccountSubCategory;
+  createDate: string;
+  loanOfficer: string;
+}
+
 export interface DailySummary {
   totalCashIn: number;
   totalCashOut: number;
