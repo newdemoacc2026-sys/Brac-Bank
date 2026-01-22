@@ -62,6 +62,8 @@ export interface ChequeBook {
   endPage: string;
   loanOfficer: string;
   receivedDate: string;
+  status: 'Pending' | 'Submitted';
+  deliveryDate?: string;
 }
 
 export interface DebitCard {
@@ -72,6 +74,8 @@ export interface DebitCard {
   cardNumber: string;
   loanOfficer: string;
   receivedDate: string;
+  status: 'Pending' | 'Submitted';
+  deliveryDate?: string;
 }
 
 export interface DailySummary {
