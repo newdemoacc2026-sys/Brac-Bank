@@ -79,14 +79,7 @@ export interface DebitCard {
 }
 
 export type AccountCategory = 'Retail' | 'Current' | 'Student' | 'Farmer';
-export type AccountSubCategory = 
-  | 'Savings' 
-  | 'Tara Homemakers' 
-  | 'Tara Probashi Savings' 
-  | 'Salary' 
-  | 'Shadhin' 
-  | 'Uddipona' 
-  | 'Standard';
+export type AccountSubCategory = string;
 
 export interface BankAccount {
   id: string;

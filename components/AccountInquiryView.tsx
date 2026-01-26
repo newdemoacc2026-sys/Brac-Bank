@@ -1,10 +1,12 @@
+
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   Plus, User, Phone, Hash, Calendar, Trash2, X, 
   ChevronDown, Check, Briefcase, Search, Filter, 
   LayoutGrid, UserPlus, Users, GraduationCap, Sprout,
   UsersRound, ChevronRight, AlertCircle, Pencil, ExternalLink,
-  BookCopy, CreditCard, HandCoins, Activity, AlertTriangle
+  BookCopy, CreditCard, HandCoins, Activity, AlertTriangle,
+  Landmark
 } from 'lucide-react';
 import { BankAccount, AccountCategory, AccountSubCategory, ChequeBook, DebitCard, Disbursement } from '../types';
 import { AdvancedDatePicker } from './AdvancedDatePicker';
@@ -16,6 +18,8 @@ interface AccountInquiryViewProps {
   inventoryCheques: ChequeBook[];
   inventoryCards: DebitCard[];
   disbursements: Disbursement[];
+  retailAccountTypes: string[];
+  currentAccountTypes: string[];
   onAddAccount: (acc: Omit<BankAccount, 'id'>) => void;
   onUpdateAccount: (id: string, acc: Omit<BankAccount, 'id'>) => void;
   onDeleteAccount: (id: string) => void;
@@ -31,6 +35,8 @@ export const AccountInquiryView: React.FC<AccountInquiryViewProps> = ({
   inventoryCheques,
   inventoryCards,
   disbursements,
+  retailAccountTypes,
+  currentAccountTypes,
   onAddAccount, 
   onUpdateAccount, 
   onDeleteAccount, 
@@ -106,7 +112,7 @@ export const AccountInquiryView: React.FC<AccountInquiryViewProps> = ({
     }
   };
 
-  const handleSelectSubCategory = (sub: AccountSubCategory) => {
+  const handleSelectSubCategory = (sub: string) => {
     setFormData(prev => ({ ...prev, subCategory: sub }));
     setStage('form');
   };
@@ -236,13 +242,12 @@ export const AccountInquiryView: React.FC<AccountInquiryViewProps> = ({
       </div>
 
       {/* MODALS */}
-      
-      {/* 1. Category Selection */}
       {stage === 'selection' && (
         <ModalWrapper onClose={handleClose}>
           <h3 className="text-xl font-black text-slate-900 dark:text-white mb-6">{t.selectCat}</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <SelectionCard icon={<UsersRound size={24}/>} title={t.retail} color="blue" onClick={() => handleSelectCategory('Retail')} />
+            {/* Added Landmark icon import to lucide-react above and using it below */}
             <SelectionCard icon={<Landmark size={24}/>} title={t.current} color="purple" onClick={() => handleSelectCategory('Current')} />
             <SelectionCard icon={<GraduationCap size={24}/>} title={t.student} color="emerald" onClick={() => handleSelectCategory('Student')} />
             <SelectionCard icon={<Sprout size={24}/>} title={t.farmer} color="orange" onClick={() => handleSelectCategory('Farmer')} />
@@ -250,29 +255,23 @@ export const AccountInquiryView: React.FC<AccountInquiryViewProps> = ({
         </ModalWrapper>
       )}
 
-      {/* 2. Sub-Category Selection */}
       {stage === 'subSelection' && (
         <ModalWrapper onClose={() => setStage('selection')}>
           <h3 className="text-xl font-black text-slate-900 dark:text-white mb-6">{t.selectSub}</h3>
-          <div className="grid grid-cols-1 gap-3">
+          <div className="grid grid-cols-1 gap-3 max-h-[60vh] overflow-y-auto custom-scrollbar pr-2">
             {formData.category === 'Retail' ? (
-              <>
-                <SubOption title="Savings" onClick={() => handleSelectSubCategory('Savings')} />
-                <SubOption title="Tara Homemakers" onClick={() => handleSelectSubCategory('Tara Homemakers')} />
-                <SubOption title="Tara Probashi Savings" onClick={() => handleSelectSubCategory('Tara Probashi Savings')} />
-                <SubOption title="Salary" onClick={() => handleSelectSubCategory('Salary')} />
-              </>
+              retailAccountTypes.map(type => (
+                <SubOption key={type} title={type} onClick={() => handleSelectSubCategory(type)} />
+              ))
             ) : (
-              <>
-                <SubOption title="Current Acc Shadhin" onClick={() => handleSelectSubCategory('Shadhin')} />
-                <SubOption title="Current Acc Uddipona" onClick={() => handleSelectSubCategory('Uddipona')} />
-              </>
+              currentAccountTypes.map(type => (
+                <SubOption key={type} title={type} onClick={() => handleSelectSubCategory(type)} />
+              ))
             )}
           </div>
         </ModalWrapper>
       )}
 
-      {/* 3. Form Modal */}
       {stage === 'form' && (
         <ModalWrapper onClose={handleClose}>
           <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100 dark:border-slate-800">
@@ -321,11 +320,7 @@ export const AccountInquiryView: React.FC<AccountInquiryViewProps> = ({
              </div>
              <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t.date}</label>
-                {/* FIXED: Directly using setFormData update in onDateChange for responsiveness */}
-                <AdvancedDatePicker 
-                  selectedDate={formData.createDate} 
-                  onDateChange={(d) => setFormData(prev => ({...prev, createDate: d}))} 
-                />
+                <AdvancedDatePicker selectedDate={formData.createDate} onDateChange={(d) => setFormData(prev => ({...prev, createDate: d}))} />
              </div>
              <div className="flex gap-3 pt-6">
                 <button type="button" onClick={handleClose} className="flex-1 py-4 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-2xl hover:bg-slate-200 transition-colors text-sm">{t.cancel}</button>
@@ -335,7 +330,6 @@ export const AccountInquiryView: React.FC<AccountInquiryViewProps> = ({
         </ModalWrapper>
       )}
 
-      {/* Delete Confirmation Modal */}
       {deletingId && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
           <div className="w-full max-w-sm bg-white dark:bg-[#1E293B] rounded-[2rem] shadow-2xl border border-slate-200 dark:border-slate-800 p-8 text-center animate-in zoom-in-95 duration-200">
@@ -389,11 +383,9 @@ const AccountCard: React.FC<{
   onDelete: () => void,
   onViewLinked: (view: 'inventory' | 'disbursements') => void
 }> = ({ acc, language, inventoryCheques, inventoryCards, disbursements, onEdit, onDelete, onViewLinked }) => {
-  
   const linkedCheques = useMemo(() => inventoryCheques.filter(c => c.accountNumber === acc.accountNumber), [inventoryCheques, acc.accountNumber]);
   const linkedCards = useMemo(() => inventoryCards.filter(c => c.accountNumber === acc.accountNumber), [inventoryCards, acc.accountNumber]);
   const linkedLoans = useMemo(() => disbursements.filter(d => d.accountNumber === acc.accountNumber), [disbursements, acc.accountNumber]);
-  
   const totalLoanAmount = useMemo(() => linkedLoans.reduce((sum, item) => sum + item.loanAmount, 0), [linkedLoans]);
 
   const t = {
@@ -435,44 +427,27 @@ const AccountCard: React.FC<{
                <span className="text-[10px] font-black text-slate-700 dark:text-slate-200">{acc.loanOfficer}</span>
             </div>
          </div>
-
          <div className="space-y-4">
             <div className="flex items-center gap-2">
                <Activity size={12} className="text-blue-600" />
                <h5 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Linked Records</h5>
             </div>
-            
             <div className="grid grid-cols-2 gap-3">
-               <button 
-                  onClick={() => onViewLinked('inventory')}
-                  className="flex flex-col items-start p-3 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-2xl hover:border-blue-400 transition-all text-left group/btn"
-               >
+               <button onClick={() => onViewLinked('inventory')} className="flex flex-col items-start p-3 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-2xl hover:border-blue-400 transition-all text-left group/btn">
                   <div className="flex items-center gap-2 mb-1.5">
                      <BookCopy size={12} className="text-blue-600" />
                      <span className="text-[9px] font-black uppercase text-blue-600">{t.inv}</span>
                   </div>
-                  <p className="text-[10px] font-bold text-slate-600 dark:text-slate-300 leading-tight">
-                     {linkedCheques.length} Cheques<br/>{linkedCards.length} Cards
-                  </p>
-                  <div className="mt-2 text-[8px] font-black text-blue-700 flex items-center gap-1 opacity-0 group-hover/btn:opacity-100 transition-opacity">
-                     {t.viewDetails} <ExternalLink size={8} />
-                  </div>
+                  <p className="text-[10px] font-bold text-slate-600 dark:text-slate-300 leading-tight">{linkedCheques.length} Cheques<br/>{linkedCards.length} Cards</p>
+                  <div className="mt-2 text-[8px] font-black text-blue-700 flex items-center gap-1 opacity-0 group-hover/btn:opacity-100 transition-opacity">{t.viewDetails} <ExternalLink size={8} /></div>
                </button>
-
-               <button 
-                  onClick={() => onViewLinked('disbursements')}
-                  className="flex flex-col items-start p-3 bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl hover:border-emerald-400 transition-all text-left group/btn"
-               >
+               <button onClick={() => onViewLinked('disbursements')} className="flex flex-col items-start p-3 bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl hover:border-emerald-400 transition-all text-left group/btn">
                   <div className="flex items-center gap-2 mb-1.5">
                      <HandCoins size={12} className="text-emerald-600" />
                      <span className="text-[9px] font-black uppercase text-emerald-600">{t.loan}</span>
                   </div>
-                  <p className="text-[10px] font-black text-emerald-700 dark:text-emerald-400">
-                     {formatCurrency(totalLoanAmount)}
-                  </p>
-                  <div className="mt-2 text-[8px] font-black text-emerald-700 flex items-center gap-1 opacity-0 group-hover/btn:opacity-100 transition-opacity">
-                     {t.viewDetails} <ExternalLink size={8} />
-                  </div>
+                  <p className="text-[10px] font-black text-emerald-700 dark:text-emerald-400">{formatCurrency(totalLoanAmount)}</p>
+                  <div className="mt-2 text-[8px] font-black text-emerald-700 flex items-center gap-1 opacity-0 group-hover/btn:opacity-100 transition-opacity">{t.viewDetails} <ExternalLink size={8} /></div>
                </button>
             </div>
          </div>
@@ -484,9 +459,3 @@ const AccountCard: React.FC<{
     </div>
   );
 };
-
-const Landmark = ({ size, className }: { size?: number, className?: string }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <line x1="3" y1="21" x2="21" y2="21" /><line x1="3" y1="7" x2="21" y2="7" /><line x1="5" y1="7" x2="5" y2="21" /><line x1="9" y1="7" x2="9" y2="21" /><line x1="13" y1="7" x2="13" y2="21" /><line x1="19" y1="7" x2="19" y2="21" /><path d="M12 2 3 7h18Z" />
-  </svg>
-);

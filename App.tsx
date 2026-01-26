@@ -27,10 +27,12 @@ const DEFAULT_FDR_CURRENT = ['FD SME DIPTO REPUBLIC FREEDOM', 'FD SME PRACHURJO'
 const DEFAULT_DPS_RETAIL = ['AB FLEXI DPS', 'TARA AB FLEXI DPS'];
 const DEFAULT_DPS_CURRENT = ['DPS SHONCHOY SME', 'DPS TARA SHONCHOY SME'];
 
+const DEFAULT_RETAIL_ACC_TYPES = ['Savings', 'Tara Homemakers', 'Tara Probashi Savings', 'Salary'];
+const DEFAULT_CURRENT_ACC_TYPES = ['Current Acc Shadhin', 'Current Acc Uddipona'];
+
 export type View = 'dashboard' | 'transactions' | 'disbursements' | 'fdrDps' | 'inventory' | 'accounts' | 'alerts' | 'settings';
 
 const App: React.FC = () => {
-  // Persistence Helper
   const getStoredValue = <T,>(key: string, defaultValue: T): T => {
     const stored = localStorage.getItem(key);
     if (!stored) return defaultValue;
@@ -44,8 +46,6 @@ const App: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(() => getStoredValue('nexus_darkMode', false));
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [currentView, setCurrentView] = useState<View>(() => getStoredValue('nexus_lastView', 'dashboard'));
-  
-  // NEW: State for cross-navigation filtering
   const [initialSearchFilter, setInitialSearchFilter] = useState<string | null>(null);
   
   const [transactions, setTransactions] = useState<Transaction[]>(() => 
@@ -76,7 +76,6 @@ const App: React.FC = () => {
     getStoredValue('nexus_loanOfficers', INITIAL_OFFICERS)
   );
 
-  // Dynamic Product Lists
   const [fdrRetailProducts, setFdrRetailProducts] = useState<string[]>(() => 
     getStoredValue('nexus_fdrRetail', DEFAULT_FDR_RETAIL)
   );
@@ -89,56 +88,42 @@ const App: React.FC = () => {
   const [dpsCurrentProducts, setDpsCurrentProducts] = useState<string[]>(() => 
     getStoredValue('nexus_dpsCurrent', DEFAULT_DPS_CURRENT)
   );
+
+  // Dynamic Account Type states
+  const [retailAccountTypes, setRetailAccountTypes] = useState<string[]>(() => 
+    getStoredValue('nexus_retailAccTypes', DEFAULT_RETAIL_ACC_TYPES)
+  );
+  const [currentAccountTypes, setCurrentAccountTypes] = useState<string[]>(() => 
+    getStoredValue('nexus_currentAccTypes', DEFAULT_CURRENT_ACC_TYPES)
+  );
   
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   
-  // Settings State
   const [bankName, setBankName] = useState(() => getStoredValue('nexus_bankName', 'Nexus Bank'));
   const [bankLogo, setBankLogo] = useState<string | null>(() => getStoredValue('nexus_bankLogo', null));
   const [language, setLanguage] = useState<'en' | 'bn'>(() => getStoredValue('nexus_language', 'en'));
   const [userName, setUserName] = useState(() => getStoredValue('nexus_userName', 'Admin Panel'));
   const [userAvatar, setUserAvatar] = useState<string | null>(() => getStoredValue('nexus_userAvatar', null));
 
-  // Sync to LocalStorage
-  useEffect(() => {
-    localStorage.setItem('nexus_transactions', JSON.stringify(transactions));
-  }, [transactions]);
-
-  useEffect(() => {
-    localStorage.setItem('nexus_accounts', JSON.stringify(accounts));
-  }, [accounts]);
-
-  useEffect(() => {
-    localStorage.setItem('nexus_disbursements', JSON.stringify(disbursements));
-  }, [disbursements]);
-
-  useEffect(() => {
-    localStorage.setItem('nexus_fdrDps', JSON.stringify(fdrDpsEntries));
-  }, [fdrDpsEntries]);
-
-  useEffect(() => {
-    localStorage.setItem('nexus_inventoryCheques', JSON.stringify(inventoryCheques));
-  }, [inventoryCheques]);
-
-  useEffect(() => {
-    localStorage.setItem('nexus_inventoryCards', JSON.stringify(inventoryCards));
-  }, [inventoryCards]);
-
-  useEffect(() => {
-    localStorage.setItem('nexus_loanOfficers', JSON.stringify(loanOfficers));
-  }, [loanOfficers]);
-
+  useEffect(() => { localStorage.setItem('nexus_transactions', JSON.stringify(transactions)); }, [transactions]);
+  useEffect(() => { localStorage.setItem('nexus_accounts', JSON.stringify(accounts)); }, [accounts]);
+  useEffect(() => { localStorage.setItem('nexus_disbursements', JSON.stringify(disbursements)); }, [disbursements]);
+  useEffect(() => { localStorage.setItem('nexus_fdrDps', JSON.stringify(fdrDpsEntries)); }, [fdrDpsEntries]);
+  useEffect(() => { localStorage.setItem('nexus_inventoryCheques', JSON.stringify(inventoryCheques)); }, [inventoryCheques]);
+  useEffect(() => { localStorage.setItem('nexus_inventoryCards', JSON.stringify(inventoryCards)); }, [inventoryCards]);
+  useEffect(() => { localStorage.setItem('nexus_loanOfficers', JSON.stringify(loanOfficers)); }, [loanOfficers]);
   useEffect(() => {
     localStorage.setItem('nexus_fdrRetail', JSON.stringify(fdrRetailProducts));
     localStorage.setItem('nexus_fdrCurrent', JSON.stringify(fdrCurrentProducts));
     localStorage.setItem('nexus_dpsRetail', JSON.stringify(dpsRetailProducts));
     localStorage.setItem('nexus_dpsCurrent', JSON.stringify(dpsCurrentProducts));
   }, [fdrRetailProducts, fdrCurrentProducts, dpsRetailProducts, dpsCurrentProducts]);
-
   useEffect(() => {
-    localStorage.setItem('nexus_lastView', JSON.stringify(currentView));
-  }, [currentView]);
+    localStorage.setItem('nexus_retailAccTypes', JSON.stringify(retailAccountTypes));
+    localStorage.setItem('nexus_currentAccTypes', JSON.stringify(currentAccountTypes));
+  }, [retailAccountTypes, currentAccountTypes]);
 
+  useEffect(() => { localStorage.setItem('nexus_lastView', JSON.stringify(currentView)); }, [currentView]);
   useEffect(() => {
     localStorage.setItem('nexus_bankName', JSON.stringify(bankName));
     localStorage.setItem('nexus_bankLogo', JSON.stringify(bankLogo));
@@ -150,11 +135,8 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const root = window.document.documentElement;
-    if (isDarkMode) {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
+    if (isDarkMode) root.classList.add('dark');
+    else root.classList.remove('dark');
   }, [isDarkMode]);
 
   const toggleTheme = () => setIsDarkMode(prev => !prev);
@@ -188,10 +170,7 @@ const App: React.FC = () => {
   };
 
   const addDisbursement = (newDis: Omit<Disbursement, 'id'>) => {
-    const dis: Disbursement = {
-      ...newDis,
-      id: Math.random().toString(36).substr(2, 9)
-    };
+    const dis: Disbursement = { ...newDis, id: Math.random().toString(36).substr(2, 9) };
     setDisbursements(prev => [dis, ...prev]);
   };
 
@@ -204,10 +183,7 @@ const App: React.FC = () => {
   };
 
   const addFdrDps = (newEntry: Omit<FdrDps, 'id'>) => {
-    const entry: FdrDps = {
-      ...newEntry,
-      id: Math.random().toString(36).substr(2, 9)
-    };
+    const entry: FdrDps = { ...newEntry, id: Math.random().toString(36).substr(2, 9) };
     setFdrDpsEntries(prev => [entry, ...prev]);
   };
 
@@ -245,7 +221,6 @@ const App: React.FC = () => {
     setInventoryCards(prev => prev.filter(c => c.id !== id));
   };
 
-  // NEW: Handler for cross-linking navigation
   const navigateToFilteredView = (view: View, accountNo: string) => {
     setInitialSearchFilter(accountNo);
     setCurrentView(view);
@@ -255,13 +230,19 @@ const App: React.FC = () => {
     switch (currentView) {
       case 'dashboard':
         return (
-          <div className="space-y-10">
+          <div className="space-y-12">
             <Dashboard 
               transactions={transactions} 
               selectedDate={selectedDate} 
               onDateChange={setSelectedDate}
               isDarkMode={isDarkMode}
               language={language}
+              accounts={accounts}
+              disbursements={disbursements}
+              fdrDps={fdrDpsEntries}
+              cheques={inventoryCheques}
+              cards={inventoryCards}
+              onViewChange={setCurrentView}
             />
             <div className="w-full">
               <TransactionTable 
@@ -280,6 +261,8 @@ const App: React.FC = () => {
             inventoryCheques={inventoryCheques}
             inventoryCards={inventoryCards}
             disbursements={disbursements}
+            retailAccountTypes={retailAccountTypes}
+            currentAccountTypes={currentAccountTypes}
             onAddAccount={addBankAccount}
             onUpdateAccount={updateBankAccount}
             onDeleteAccount={deleteBankAccount}
@@ -290,11 +273,7 @@ const App: React.FC = () => {
       case 'transactions':
         return (
           <div className="w-full animate-in slide-in-from-bottom-4 duration-500">
-            <TransactionTable 
-              transactions={filteredTransactions} 
-              isFullView 
-              language={language}
-            />
+            <TransactionTable transactions={filteredTransactions} isFullView language={language} />
           </div>
         );
       case 'disbursements':
@@ -365,6 +344,10 @@ const App: React.FC = () => {
             setDpsRetailProducts={setDpsRetailProducts}
             dpsCurrentProducts={dpsCurrentProducts}
             setDpsCurrentProducts={setDpsCurrentProducts}
+            retailAccountTypes={retailAccountTypes}
+            setRetailAccountTypes={setRetailAccountTypes}
+            currentAccountTypes={currentAccountTypes}
+            setCurrentAccountTypes={setCurrentAccountTypes}
             language={language}
             setLanguage={setLanguage}
           />
@@ -382,7 +365,6 @@ const App: React.FC = () => {
         onOpenAddTransaction={() => setIsFormOpen(true)}
         currentView={currentView}
         onViewChange={(v) => {
-          // Clear initial filter when navigating manually via layout
           setInitialSearchFilter(null);
           setCurrentView(v);
         }}
@@ -393,8 +375,6 @@ const App: React.FC = () => {
         language={language}
       >
         <div className="max-w-7xl mx-auto px-4 py-8 space-y-8 animate-in fade-in duration-500">
-          
-          {/* Global Header with Date Selector */}
           {(currentView === 'dashboard' || currentView === 'transactions') && (
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-slate-200 dark:border-slate-800 pb-8">
               <div>
@@ -407,7 +387,6 @@ const App: React.FC = () => {
                     : (language === 'en' ? `Transaction history for ${selectedDate}` : `${selectedDate}-এর লেনদেনের ইতিহাস`)}
                 </p>
               </div>
-              
               <div className="flex flex-col gap-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">
                   {language === 'en' ? 'Select Data Range' : 'তারিখ নির্বাচন করুন'}
@@ -416,20 +395,13 @@ const App: React.FC = () => {
               </div>
             </div>
           )}
-
           {renderView()}
         </div>
       </Layout>
-
-      {/* Transaction Modal Overlay */}
       {isFormOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="w-full max-w-md animate-in zoom-in-95 duration-200">
-            <TransactionForm 
-              onAddTransaction={addTransaction} 
-              onClose={() => setIsFormOpen(false)} 
-              language={language}
-            />
+            <TransactionForm onAddTransaction={addTransaction} onClose={() => setIsFormOpen(false)} language={language} />
           </div>
         </div>
       )}
